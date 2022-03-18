@@ -764,12 +764,12 @@ class InferenceRunnerImpl : public CLInferenceRunner {
 
   absl::Status RunWithoutExternalBufferCopy() override {
     //author:fu
-    TFLITE_LOG(INFO) << "fsw in RunWithoutExternalBufferCopy... :" << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in RunWithoutExternalBufferCopy... :";
     RETURN_IF_ERROR(context_->AddToQueue(queue_));
-    // clFlush(queue_->queue());
+    clFlush(queue_->queue());
     
     //author:fu
-    clFinish(queue_->queue());
+    // clFinish(queue_->queue());
 
     return absl::OkStatus();
   }

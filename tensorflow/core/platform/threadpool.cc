@@ -28,6 +28,44 @@ limitations under the License.
 #include "tensorflow/core/platform/setround.h"
 #include "tensorflow/core/platform/tracing.h"
 
+#include "tensorflow/lite/tools/logging.h"
+#include <mutex>
+#include <condition_variable>
+
+//author:fu parallel execute
+// tensorflow::thread::ThreadPool* execute_pool_;
+// std::mutex complete_mutex_;
+// std::condition_variable complete_cv_;
+// int out_standings_ = 0;
+// extern std::vector<int> parallel_execution_plan_;
+
+// void RunNode(int node_idx){
+
+// }
+// void EnqueueNode(int node_idx){
+//   {
+//     std::unique_lock<mutex> lock(complete_mutex_);
+//     out_standings_++;
+//   }
+//   execute_pool_->Schedule([node_idx](){
+//     RunNode(node_idx);
+//     FinishNodeRun();
+//   });
+
+// }
+
+// void parallel_execute(){
+//   int num_threads = 4;
+//   execute_pool_ = std::make_unique<tensorflow::thread::ThreadPool>(tensorflow::Env::Default(), "parallel_execute_threadpool", num_threads);
+
+//   int root_node_index = parallel_execution_plan_[0];
+//   EnqueueNode(root_node_index);
+
+//   //wait for finish
+
+// }
+
+
 namespace tensorflow {
 namespace thread {
 
@@ -96,6 +134,7 @@ ThreadPool::ThreadPool(Env* env, const ThreadOptions& thread_options,
 ThreadPool::ThreadPool(Env* env, const ThreadOptions& thread_options,
                        const string& name, int num_threads,
                        bool low_latency_hint, Eigen::Allocator* allocator) {
+  TFLITE_LOG(INFO) << "fsw in ThreadPool...";
   CHECK_GE(num_threads, 1);
   eigen_threadpool_.reset(new Eigen::ThreadPoolTempl<EigenEnvironment>(
       num_threads, low_latency_hint,
@@ -106,6 +145,8 @@ ThreadPool::ThreadPool(Env* env, const ThreadOptions& thread_options,
 }
 
 ThreadPool::ThreadPool(thread::ThreadPoolInterface* user_threadpool) {
+  TFLITE_LOG(INFO) << "fsw in ThreadPool2...";
+
   underlying_threadpool_ = user_threadpool;
   threadpool_device_.reset(new Eigen::ThreadPoolDevice(
       underlying_threadpool_, underlying_threadpool_->NumThreads(), nullptr));

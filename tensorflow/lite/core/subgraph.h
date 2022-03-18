@@ -65,6 +65,9 @@ class Subgraph {
   Subgraph& operator=(const Subgraph&) = delete;
   virtual ~Subgraph();
 
+  //author:fu
+  TfLiteStatus parallel_execute(int node_index);
+
   // Provide a list of tensor indexes that are inputs to the model.
   // Each index is bound check and this modifies the consistent_ flag of the
   // interpreter.

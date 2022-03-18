@@ -354,9 +354,11 @@ BuiltinOpResolver::BuiltinOpResolver() {
 
   // Populate the list of TF Lite delegate creators. The created delegates could
   // be applied to the model graph by default at runtime.
-  delegate_creators_.push_back([](int num_threads) {
-    return tflite::MaybeCreateXNNPACKDelegate(num_threads);
-  });
+
+  //author:fu
+  // delegate_creators_.push_back([](int num_threads) {
+  //   return tflite::MaybeCreateXNNPACKDelegate(num_threads);
+  // });
 }
 
 }  // namespace builtin

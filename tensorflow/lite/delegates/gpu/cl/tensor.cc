@@ -30,6 +30,7 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 #include "tensorflow/lite/delegates/gpu/api.h"
 
+
 extern bool is_input_tensor_linked;
 extern std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> input_tensor_map;
 extern std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> output_tensor_map;

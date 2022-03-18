@@ -409,13 +409,19 @@ class Env {
   // provide a routine to get the absolute time.
 
   /// \brief Returns the number of nano-seconds since the Unix epoch.
-  virtual uint64 NowNanos() const { return EnvTime::NowNanos(); }
+  virtual uint64 NowNanos() const { 
+    // return EnvTime::NowNanos(); 
+    }
 
   /// \brief Returns the number of micro-seconds since the Unix epoch.
-  virtual uint64 NowMicros() const { return EnvTime::NowMicros(); }
+  virtual uint64 NowMicros() const { 
+    // return EnvTime::NowMicros(); 
+    }
 
   /// \brief Returns the number of seconds since the Unix epoch.
-  virtual uint64 NowSeconds() const { return EnvTime::NowSeconds(); }
+  virtual uint64 NowSeconds() const { 
+    // return EnvTime::NowSeconds(); 
+    }
 
   /// Sleeps/delays the thread for the prescribed number of micro-seconds.
   virtual void SleepForMicroseconds(int64_t micros) = 0;
