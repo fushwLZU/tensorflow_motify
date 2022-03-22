@@ -20,6 +20,8 @@ limitations under the License.
 #include <cstring>
 #include <vector>
 #include <fstream>
+#include <unordered_map>
+#include <sstream>
 
 #include "tensorflow/lite/builtin_ops.h"
 #include "tensorflow/lite/context_util.h"
@@ -29,6 +31,10 @@ limitations under the License.
 
 //author:fu
 extern std::string partition_file_name;
+std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
+std::vector<std::vector<int>> gpu_partition_nodes;
+int total_nodes_nums;
+int gpu_partition_num;
 
 namespace tflite {
 namespace delegates {
@@ -38,7 +44,7 @@ TfLiteStatus CreateNewTensorWithDifferentType(TfLiteContext* context,
                                               TfLiteType new_type,
                                               TfLiteTensor** new_tensor,
                                               int* new_tensor_index) {
-  TFLITE_LOG(INFO) << "fsw in CreateNewTensorWithDifferentType...";
+  // TFLITE_LOG(INFO) << "fsw in CreateNewTensorWithDifferentType...";
   TF_LITE_ENSURE_STATUS(context->AddTensors(context, 1, new_tensor_index));
   const TfLiteTensor& original_tensor = context->tensors[original_tensor_index];
   *new_tensor = &context->tensors[*new_tensor_index];
@@ -133,6 +139,11 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   // which is dangerous if a delegate's IsNodeSupportedFn uses it anywhere.
   // So we store a copy to ensure validity.
   num_total_nodes_ = execution_plan->size;
+  
+  TFLITE_LOG(INFO) << "num_total_nodes_ = " << num_total_nodes_;
+  //author:fu
+  total_nodes_nums = num_total_nodes_;
+
   original_execution_plan_ = TfLiteIntArrayCreate(execution_plan->size);
   std::memcpy(original_execution_plan_->data, execution_plan->data,
               num_total_nodes_ * sizeof(int32_t));
@@ -176,8 +187,28 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   std::ifstream infile;
   infile.open(partition_file_name);
   std::string tmp;
+  getline(infile, tmp);
+  std::stringstream ss(tmp);
+  std::string token;
+  while (ss >> token){
+    node_ids.push_back(std::stod(token));
+  }
   while(getline(infile,tmp)){
-    node_ids.push_back(std::stod(tmp));
+    gpu_partition_num++;
+    std::stringstream ss(tmp);
+    std::string divide_point;
+    std::string node_idx;
+    std::vector<int> cpu_nodes;
+    ss >> divide_point;
+    while(ss >> node_idx){
+      cpu_nodes.push_back(std::stod(node_idx));
+    }
+    divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
+  }
+
+  for(int i=0;i<gpu_partition_num;++i){
+    gpu_partition_nodes.push_back({total_nodes_nums});
+    total_nodes_nums++;
   }
   for(int i = 0; i < node_ids.size(); ++i){
     supported_nodes_->data[supported_nodes_->size++] = node_ids[i];

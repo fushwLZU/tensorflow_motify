@@ -58,6 +58,12 @@ limitations under the License.
 #include "tensorflow/lite/arena_planner.h"
 #endif
 
+//author:fu
+extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
+extern std::vector<std::vector<int>> gpu_partition_nodes;
+extern int total_nodes_nums;
+extern int gpu_partition_num;
+
 namespace tflite {
 
 namespace {
@@ -406,8 +412,8 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
     TfLiteRegistration registration, const TfLiteIntArray* nodes_to_replace,
     TfLiteDelegate* delegate) {
 
-  TFLITE_LOG(INFO) << "fsw In ReplaceNodeSubsetsWithDelegateKernels():" << std::endl;
-  TFLITE_LOG(INFO) << "nodes_to_replace=" << nodes_to_replace->size << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In ReplaceNodeSubsetsWithDelegateKernels():" << std::endl;
+  // TFLITE_LOG(INFO) << "nodes_to_replace=" << nodes_to_replace->size << std::endl;
   
   // Ignore empty node replacement sets.
   if (!nodes_to_replace->size) {
@@ -570,7 +576,7 @@ TfLiteStatus Subgraph::GetModelMetadata(const struct TfLiteContext* context,
 TfLiteStatus Subgraph::PreviewDelegatePartitioning(
     const TfLiteIntArray* nodes_to_replace,
     TfLiteDelegateParams** partition_params_array, int* num_partitions) {
-  TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning()..." << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning()..." << std::endl;
   
   // Ensure partitioning cache is empty.
   FreeDelegatePartitioningData();
@@ -606,7 +612,7 @@ TfLiteStatus Subgraph::PreviewDelegatePartitioning(
 TfLiteStatus Subgraph::PreviewDelegatePartitioning(
     struct TfLiteContext* context, const TfLiteIntArray* nodes_to_replace,
     TfLiteDelegateParams** partition_params_array, int* num_partitions) {
-  TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning():" << std::endl;
   return static_cast<Subgraph*>(context->impl_)
       ->PreviewDelegatePartitioning(nodes_to_replace, partition_params_array,
                                     num_partitions);
@@ -728,7 +734,7 @@ TfLiteStatus Subgraph::BytesRequired(TfLiteType type, const int* dims,
 }
 
 TfLiteStatus Subgraph::AllocateTensors() {
-  TFLITE_LOG(INFO) << "fsw In AllocateTensors()... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In AllocateTensors()... " << std::endl;
 
   TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(), "AllocateTensors");
   if (!consistent_) {
@@ -785,7 +791,7 @@ TfLiteStatus Subgraph::AllocateTensors() {
   // index that uses the tensor.
   InitializeTensorReleaseMap();
 
-  TFLITE_LOG(INFO) << "fsw In AllocateTensors()...end " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In AllocateTensors()...end " << std::endl;
 
   return kTfLiteOk;
 }
@@ -914,7 +920,7 @@ bool Subgraph::OpMightHaveSideEffect(
 
 TfLiteStatus Subgraph::ResizeInputTensor(int tensor_index,
                                          const std::vector<int>& dims) {
-  TFLITE_LOG(INFO) << "fsw in ResizeInputTensor..." << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in ResizeInputTensor..." << std::endl;
   
   const bool delegates_applied = !pre_delegation_execution_plan_.empty();
   const bool graph_is_immutable = state_ == kStateInvokableAndImmutable;
@@ -1048,7 +1054,7 @@ TfLiteStatus Subgraph::PrepareOpsStartingAt(
 }
 
 TfLiteStatus Subgraph::PrepareOpsAndTensors() {
-  TFLITE_LOG(INFO) << "fsw In PrepareOpsAndTensors... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In PrepareOpsAndTensors... " << std::endl;
 
 
   if (!memory_planner_) {
@@ -1123,7 +1129,7 @@ TfLiteStatus Subgraph::PrepareOpsAndTensors() {
 
   next_execution_plan_index_to_plan_allocation_ =
       last_exec_plan_index_prepared + 1;
-  TFLITE_LOG(INFO) << "fsw after PrepareOpsAndTensors... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw after PrepareOpsAndTensors... " << std::endl;
 
   return kTfLiteOk;
 }
@@ -1163,138 +1169,12 @@ TfLiteStatus Subgraph::RemoveUnusedInputs() {
 }
 
 //author:Fu
-TfLiteStatus Subgraph::parallel_execute(int node_index){
-  TfLiteNode& node = nodes_and_registration_[node_index].first;
-  const TfLiteRegistration& registration =
-      nodes_and_registration_[node_index].second;
-  TFLITE_LOG(INFO) << "fsw in parallel_execute";
-  const char* op_name = nullptr;
-  if (profiler_) op_name = GetTFLiteOpName(registration);
-  TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
-
-  for (int i = 0; i < node.inputs->size; ++i) {
-    int tensor_index = node.inputs->data[i];
-    if (tensor_index == kTfLiteOptionalTensor) {
-      continue;
-    }
-    TfLiteTensor* tensor = &tensors_[tensor_index];
-    if (tensor->delegate && tensor->delegate != node.delegate &&
-        tensor->data_is_stale) {
-      TFLITE_LOG(INFO) << "fsw In Invoke()1: " << std::endl;
-
-      TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
-    }
-    if (tensor->data.raw == nullptr && tensor->bytes > 0) {
-      if (registration.builtin_code == kTfLiteBuiltinReshape && i == 1 &&
-          tensor->dims->size != 1) {
-        // In general, having a tensor here with no buffer will be an error.
-        // However, for the reshape operator, the second input tensor is
-        // sometimes only used for the shape, not for the data. Thus, null
-        // buffer is ok in this situation.
-        // The situation where null buffer is not ok for reshape operator is
-        // only when there are 2 inputs given to the node and the one
-        // corresponding to the shape (i == 1) is a vector that contains all
-        // dimensions. See `GetOutputShape()` function in
-        // `tensorflow/lite/kernels/reshape.cc`
-        continue;
-      } else {
-        // In all other cases, we need to return an error as otherwise we will
-        // trigger a null pointer dereference (likely).
-        ReportError("Input tensor %d lacks data", tensor_index);
-        return kTfLiteError;
-      }
-    }
-  }
-
-  if (check_cancelled_func_ != nullptr &&
-      check_cancelled_func_(cancellation_data_)) {
-    ReportError("Client requested cancel during Invoke()");
-    return kTfLiteError;
-  }
-
-  EnsureTensorsVectorCapacity();
-  tensor_resized_since_op_invoke_ = false;
-
-  auto start = std::chrono::high_resolution_clock::now();
-
-  TFLITE_LOG(INFO) << node_index << " start time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-  if (OpInvoke(registration, &node) != kTfLiteOk) {
-    return ReportOpError(&context_, node, registration, node_index,
-                          "failed to invoke");
-  }
-  auto end = std::chrono::high_resolution_clock::now();
-  // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
-  // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
-  // TFLITE_LOG(INFO) << "fsw opinvoke time: " << d.count() << "ms";
-  std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-  TFLITE_LOG(INFO) << node_index << " opinvoke time: " << duration_mcs.count() << "us" ;
-
-  TFLITE_LOG(INFO) << node_index << " end time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-  // Force execution prep for downstream ops if the latest op triggered the
-  // resize of a dynamic tensor.
-  // if (tensor_resized_since_op_invoke_ &&
-  //     HasDynamicTensor(context_, node.outputs, nullptr)) {
-  //   next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
-
-  //   // This happens when an intermediate dynamic tensor is resized.
-  //   // We don't have to prepare all the ops, but we need to recompute
-  //   // the allocation plan.
-  //   if (next_execution_plan_index_to_plan_allocation_ >
-  //       next_execution_plan_index_to_prepare_) {
-  //     next_execution_plan_index_to_plan_allocation_ =
-  //         next_execution_plan_index_to_prepare_;
-  //     if (memory_planner_) {
-  //       TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocationsAfter(
-  //           next_execution_plan_index_to_plan_allocation_ - 1));
-  //     }
-  //   }
-  // }
-  // // Release dynamic tensor memory if configured by the user.
-  // MaybeReleaseDynamicInputs(node, node_index);
-
-  return kTfLiteOk;
-
-}
-TfLiteStatus Subgraph::Invoke() {
-
-  TFLITE_LOG(INFO) << "fsw In Invoke(): execution_plan_.size() = " << execution_plan_.size();
-
-  if (!consistent_) {
-    ReportError("Invoke called on model that is not consistent.");
-    return kTfLiteError;
-  }
-
-  TfLiteStatus status = kTfLiteOk;
-  if (state_ == kStateUninvokable) {
-    ReportError("Invoke called on model that is not ready.");
-    return kTfLiteError;
-  } else if (memory_planner_ && !memory_planner_->HasNonPersistentMemory()) {
-    ReportError("Non-persistent memory is not available.");
-    return kTfLiteError;
-  }
-  TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(), "Invoke");
-
-  // Invocations are always done in node order.
-  // Note that calling Invoke repeatedly will cause the original memory plan to
-  // be reused, unless either ResizeInputTensor() or AllocateTensors() has been
-  // called.
-  auto start = std::chrono::high_resolution_clock::now();
-
-  for (int execution_plan_index = 0;
-       execution_plan_index < execution_plan_.size(); execution_plan_index++) {
-    if (execution_plan_index == next_execution_plan_index_to_prepare_) {
-      TF_LITE_ENSURE_STATUS(PrepareOpsAndTensors());
-      TF_LITE_ENSURE(&context_, next_execution_plan_index_to_prepare_ >=
-                                    execution_plan_index);
-    }
-    int node_index = execution_plan_[execution_plan_index];
-    TFLITE_LOG(INFO) << "current node_index: " << node_index;
+TfLiteStatus Subgraph::parallel_execute(std::vector<int> nodes){
+  for(auto& node_index : nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
-
+    // TFLITE_LOG(INFO) << "fsw in parallel_execute";
     const char* op_name = nullptr;
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
@@ -1307,7 +1187,6 @@ TfLiteStatus Subgraph::Invoke() {
       TfLiteTensor* tensor = &tensors_[tensor_index];
       if (tensor->delegate && tensor->delegate != node.delegate &&
           tensor->data_is_stale) {
-        TFLITE_LOG(INFO) << "fsw In Invoke()1: " << std::endl;
 
         TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
       }
@@ -1342,28 +1221,159 @@ TfLiteStatus Subgraph::Invoke() {
     EnsureTensorsVectorCapacity();
     tensor_resized_since_op_invoke_ = false;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    TFLITE_LOG(INFO) << node_index << " start time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // TFLITE_LOG(INFO) << node_index << " start time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    if (OpInvoke(registration, &node) != kTfLiteOk) {
+      return ReportOpError(&context_, node, registration, node_index,
+                            "failed to invoke");
+    }
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
+    // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
+    // TFLITE_LOG(INFO) << "fsw opinvoke time: " << d.count() << "ms";
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << node_index << " opinvoke time: " << duration_mcs.count() << "us" ;
+
+    // TFLITE_LOG(INFO) << node_index << " end time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    // Force execution prep for downstream ops if the latest op triggered the
+    // resize of a dynamic tensor.
+    // if (tensor_resized_since_op_invoke_ &&
+    //     HasDynamicTensor(context_, node.outputs, nullptr)) {
+    //   next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
+
+    //   // This happens when an intermediate dynamic tensor is resized.
+    //   // We don't have to prepare all the ops, but we need to recompute
+    //   // the allocation plan.
+    //   if (next_execution_plan_index_to_plan_allocation_ >
+    //       next_execution_plan_index_to_prepare_) {
+    //     next_execution_plan_index_to_plan_allocation_ =
+    //         next_execution_plan_index_to_prepare_;
+    //     if (memory_planner_) {
+    //       TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocationsAfter(
+    //           next_execution_plan_index_to_plan_allocation_ - 1));
+    //     }
+    //   }
+    // }
+    // // Release dynamic tensor memory if configured by the user.
+    // MaybeReleaseDynamicInputs(node, node_index);
+  }
+  return kTfLiteOk;
+
+}
+TfLiteStatus Subgraph::Invoke() {
+
+  // TFLITE_LOG(INFO) << "fsw In Invoke(): execution_plan_.size() = " << execution_plan_.size();
+
+  if (!consistent_) {
+    ReportError("Invoke called on model that is not consistent.");
+    return kTfLiteError;
+  }
+
+  TfLiteStatus status = kTfLiteOk;
+  if (state_ == kStateUninvokable) {
+    ReportError("Invoke called on model that is not ready.");
+    return kTfLiteError;
+  } else if (memory_planner_ && !memory_planner_->HasNonPersistentMemory()) {
+    ReportError("Non-persistent memory is not available.");
+    return kTfLiteError;
+  }
+  TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(), "Invoke");
+
+  // Invocations are always done in node order.
+  // Note that calling Invoke repeatedly will cause the original memory plan to
+  // be reused, unless either ResizeInputTensor() or AllocateTensors() has been
+  // called.
+
+  //author:fu
+  
+  int current_gpu_partition = 0;
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  for (int execution_plan_index = 0;
+       execution_plan_index < execution_plan_.size(); execution_plan_index++) {
+    if (execution_plan_index == next_execution_plan_index_to_prepare_) {
+      TF_LITE_ENSURE_STATUS(PrepareOpsAndTensors());
+      TF_LITE_ENSURE(&context_, next_execution_plan_index_to_prepare_ >=
+                                    execution_plan_index);
+    }
+    int node_index = execution_plan_[execution_plan_index];
+    // TFLITE_LOG(INFO) << "current node_index: " << node_index;
+    TfLiteNode& node = nodes_and_registration_[node_index].first;
+    const TfLiteRegistration& registration =
+        nodes_and_registration_[node_index].second;
+
+    const char* op_name = nullptr;
+    if (profiler_) op_name = GetTFLiteOpName(registration);
+    TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
+
+    for (int i = 0; i < node.inputs->size; ++i) {
+      int tensor_index = node.inputs->data[i];
+      if (tensor_index == kTfLiteOptionalTensor) {
+        continue;
+      }
+      TfLiteTensor* tensor = &tensors_[tensor_index];
+      if (tensor->delegate && tensor->delegate != node.delegate &&
+          tensor->data_is_stale) {
+
+        TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
+      }
+      if (tensor->data.raw == nullptr && tensor->bytes > 0) {
+        if (registration.builtin_code == kTfLiteBuiltinReshape && i == 1 &&
+            tensor->dims->size != 1) {
+          // In general, having a tensor here with no buffer will be an error.
+          // However, for the reshape operator, the second input tensor is
+          // sometimes only used for the shape, not for the data. Thus, null
+          // buffer is ok in this situation.
+          // The situation where null buffer is not ok for reshape operator is
+          // only when there are 2 inputs given to the node and the one
+          // corresponding to the shape (i == 1) is a vector that contains all
+          // dimensions. See `GetOutputShape()` function in
+          // `tensorflow/lite/kernels/reshape.cc`
+          continue;
+        } else {
+          // In all other cases, we need to return an error as otherwise we will
+          // trigger a null pointer dereference (likely).
+          ReportError("Input tensor %d lacks data", tensor_index);
+          return kTfLiteError;
+        }
+      }
+    }
+
+    if (check_cancelled_func_ != nullptr &&
+        check_cancelled_func_(cancellation_data_)) {
+      ReportError("Client requested cancel during Invoke()");
+      return kTfLiteError;
+    }
+
+    EnsureTensorsVectorCapacity();
+    tensor_resized_since_op_invoke_ = false;
+
+    // auto start = std::chrono::high_resolution_clock::now();
+
+    // TFLITE_LOG(INFO) << node_index << " start time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     if (OpInvoke(registration, &node) != kTfLiteOk) {
       return ReportOpError(&context_, node, registration, node_index,
                            "failed to invoke");
     }
-    auto end = std::chrono::high_resolution_clock::now();
+    // auto end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
     // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
     // TFLITE_LOG(INFO) << "fsw opinvoke time: " << d.count() << "ms";
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw opinvoke time: " << duration_mcs.count() << "us" ;
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw opinvoke time: " << duration_mcs.count() << "us" ;
 
-    TFLITE_LOG(INFO) << node_index << " end time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // TFLITE_LOG(INFO) << node_index << " end time:" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     // Force execution prep for downstream ops if the latest op triggered the
     // resize of a dynamic tensor.
     if (tensor_resized_since_op_invoke_ &&
         HasDynamicTensor(context_, node.outputs, nullptr)) {
-      TFLITE_LOG(INFO) << "HasDynamicTensor" ;
+      // TFLITE_LOG(INFO) << "HasDynamicTensor" ;
       next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
 
       // This happens when an intermediate dynamic tensor is resized.
@@ -1382,13 +1392,14 @@ TfLiteStatus Subgraph::Invoke() {
     // Release dynamic tensor memory if configured by the user.
     MaybeReleaseDynamicInputs(node, node_index);
 
-    if(node_index == 6){
-      std::thread branch1(&Subgraph::parallel_execute, this, 8);
-      std::thread branch2(&Subgraph::parallel_execute, this, 40);
+    if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
+      std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
+      std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
+      std::thread branch2(&Subgraph::parallel_execute, this, gpu_node);
       branch1.join();
       branch2.join();
-      execution_plan_index+=2;
-      TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;
+      execution_plan_index += divide_point_and_cpu_nodes[node_index].size() + 1;
+      // TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
@@ -1540,7 +1551,7 @@ TfLiteStatus Subgraph::SetTensorParametersReadOnly(
   TfLiteTensor& tensor = context_.tensors[tensor_index];
   if (type == tensor.type &&
       EqualArrayAndTfLiteIntArray(tensor.dims, rank, dims)) {
-    TFLITE_LOG(INFO) << "type == tensor.type..." << std::endl;
+    // TFLITE_LOG(INFO) << "type == tensor.type..." << std::endl;
     // Fast path which does not invalidate the invokable property.
     TfLiteTensorDataFree(&tensor);
     TfLiteQuantizationFree(&tensor.quantization);
@@ -1674,7 +1685,7 @@ TfLiteStatus Subgraph::ResizeTensorImpl(TfLiteTensor* tensor,
 }
 
 void Subgraph::SwitchToDelegateContext() {
-  TFLITE_LOG(INFO) << "fsw In SwitchToDelegateContext():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In SwitchToDelegateContext():" << std::endl;
 
   context_.GetNodeAndRegistration = GetNodeAndRegistration;
   context_.ReplaceNodeSubsetsWithDelegateKernels =
@@ -1684,7 +1695,7 @@ void Subgraph::SwitchToDelegateContext() {
 }
 
 void Subgraph::SwitchToKernelContext() {
-  TFLITE_LOG(INFO) << "fsw In SwitchToKernelContext():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In SwitchToKernelContext():" << std::endl;
 
   context_.GetNodeAndRegistration = [](struct TfLiteContext* context,
                                        int node_index, TfLiteNode** node,
@@ -1707,7 +1718,7 @@ void Subgraph::SwitchToKernelContext() {
   // Free any memory that might have been allocated by
   // PreviewDelegatePartitioning.
   FreeDelegatePartitioningData();
-  TFLITE_LOG(INFO) << "fsw after SwitchToKernelContext():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw after SwitchToKernelContext():" << std::endl;
 
 }
 
@@ -1803,7 +1814,7 @@ TfLiteStatus Subgraph::RedoAllDelegates() {
 }
 
 TfLiteStatus Subgraph::RemoveAllDelegates() {
-  TFLITE_LOG(INFO) << "fsw In RemoveAllDelegates()... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In RemoveAllDelegates()... " << std::endl;
 
   TF_LITE_ENSURE_STATUS(UndoAllDelegates());
   delegates_applied_.clear();
@@ -1837,7 +1848,7 @@ void Subgraph::EnsureTensorsVectorCapacity() {
 }
 
 TfLiteStatus Subgraph::EnsureMemoryAllocations() {
-  TFLITE_LOG(INFO) << "fsw In EnsureMemoryAllocations()... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In EnsureMemoryAllocations()... " << std::endl;
 
   if (memory_planner_) {
     state_ = kStateUninvokable;
@@ -1849,7 +1860,7 @@ TfLiteStatus Subgraph::EnsureMemoryAllocations() {
 }
 
 TfLiteStatus Subgraph::ModifyGraphWithDelegate(TfLiteDelegate* delegate) {
-  TFLITE_LOG(INFO) << "fsw In ModifyGraphWithDelegate(... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In ModifyGraphWithDelegate(... " << std::endl;
 
   TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(),
                                        "ModifyGraphWithDelegate");
@@ -1965,7 +1976,7 @@ TfLiteStatus Subgraph::ModifyGraphWithDelegate(TfLiteDelegate* delegate) {
 
 TfLiteStatus Subgraph::SetCustomAllocationForTensor(
     int tensor_index, const TfLiteCustomAllocation& allocation, int64_t flags) {
-  TFLITE_LOG(INFO) << "fsw in SetCustomAllocationForTensor...";
+  // TFLITE_LOG(INFO) << "fsw in SetCustomAllocationForTensor...";
   TfLiteTensor* tensor = &context_.tensors[tensor_index];
   TF_LITE_ENSURE(context(),
                  (tensor->allocation_type == kTfLiteArenaRw ||

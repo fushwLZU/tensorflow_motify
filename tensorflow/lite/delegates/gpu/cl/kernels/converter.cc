@@ -180,7 +180,7 @@ class TensorToTensorConverter : public OpenClConverterImpl {
 
   absl::Status Convert(const TensorObject& input_obj,
                        const TensorObject& output_obj) override {
-    TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In Convert1 ...");
+    // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In Convert1 ...");
     cl_mem in_memory;
     RETURN_IF_ERROR(GetOpenCLMemory(input_obj, &in_memory));
     cl_mem out_memory;

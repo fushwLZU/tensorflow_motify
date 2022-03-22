@@ -64,7 +64,7 @@ absl::Status CLCommandQueue::Dispatch(const CLKernel& kernel,
                                       const int3& work_groups_count,
                                       const int3& work_group_size,
                                       CLEvent* event) {
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In Dispatch...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In Dispatch...");
 
   std::array<size_t, 3> local;
   std::array<size_t, 3> global;
@@ -156,7 +156,7 @@ absl::Status CLCommandQueue::EnqueueWriteBuffer(cl_mem memory,
                                                 size_t size_in_bytes,
                                                 const void* data, bool async) {
   //author:fu
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In EnqueueWriteBuffer...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In EnqueueWriteBuffer...");
 
   // const cl_bool blocking = async ? CL_FALSE : CL_TRUE;
   
@@ -178,13 +178,13 @@ absl::Status CLCommandQueue::EnqueueReadBuffer(cl_mem memory,
                                                bool async) {
   //author:fu
   // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"async=%d",async);
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In EnqueueReadBuffer...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In EnqueueReadBuffer...");
 
   // const cl_bool blocking = async ? CL_FALSE : CL_TRUE;
 
   //author:fu
   const cl_bool blocking = CL_TRUE;
-  auto start = std::chrono::high_resolution_clock::now();
+  // auto start = std::chrono::high_resolution_clock::now();
 
   auto error_code = clEnqueueReadBuffer(
       queue_, memory, blocking, 0, size_in_bytes, data, 0, nullptr, nullptr);
@@ -194,12 +194,12 @@ absl::Status CLCommandQueue::EnqueueReadBuffer(cl_mem memory,
                      CLErrorCodeToString(error_code)));
   }
 
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
-  std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw clEnqueueReadBuffer time = %f ms, ",d.count());
-  std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw clEnqueueReadBuffer time = %f us, ",duration_mcs.count());
+  // auto end = std::chrono::high_resolution_clock::now();
+  // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
+  // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw clEnqueueReadBuffer time = %f ms, ",d.count());
+  // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw clEnqueueReadBuffer time = %f us, ",duration_mcs.count());
 
   return absl::OkStatus();
 }

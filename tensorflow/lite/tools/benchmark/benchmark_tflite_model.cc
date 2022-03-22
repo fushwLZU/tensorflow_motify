@@ -271,7 +271,7 @@ CreateProfileSummaryFormatter(bool format_as_csv) {
 }  // namespace
 
 BenchmarkParams BenchmarkTfLiteModel::DefaultParams() {
-    TFLITE_LOG(INFO) << "fsw in DefaultParams(...";
+    // TFLITE_LOG(INFO) << "fsw in DefaultParams(...";
 
   BenchmarkParams default_params = BenchmarkModel::DefaultParams();
   default_params.AddParam("graph", BenchmarkParam::Create<std::string>(""));
@@ -313,7 +313,7 @@ BenchmarkParams BenchmarkTfLiteModel::DefaultParams() {
 BenchmarkTfLiteModel::BenchmarkTfLiteModel(BenchmarkParams params)
     : BenchmarkModel(std::move(params)),
       random_engine_(std::random_device()()) {
-  TFLITE_LOG(INFO) << "fsw in BenchmarkTfLiteModel..";
+  // TFLITE_LOG(INFO) << "fsw in BenchmarkTfLiteModel..";
   AddListener(&log_output_);
 }
 
@@ -331,7 +331,7 @@ BenchmarkTfLiteModel::~BenchmarkTfLiteModel() {
 }
 
 std::vector<Flag> BenchmarkTfLiteModel::GetFlags() {
-  TFLITE_LOG(INFO) << "fsw in BenchmarkTfLiteModel::GetFlags()...";
+  // TFLITE_LOG(INFO) << "fsw in BenchmarkTfLiteModel::GetFlags()...";
 
   std::vector<Flag> flags = BenchmarkModel::GetFlags();
   std::vector<Flag> specific_flags = {

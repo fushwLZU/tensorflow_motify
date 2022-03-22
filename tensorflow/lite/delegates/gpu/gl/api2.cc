@@ -126,7 +126,7 @@ class DefaultTensorTie : public TensorTie {
   }
 
   absl::Status CopyFromExternalObject() final {
-    TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject2 1..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject2 1..." << std::endl;
     if (!converter_from_) {
       return absl::OkStatus();
     }
@@ -134,7 +134,7 @@ class DefaultTensorTie : public TensorTie {
   }
 
   absl::Status SetExternalObject(TensorObject obj) final {
-    TFLITE_LOG(INFO) << "fsw in SetExternalObject..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in SetExternalObject..." << std::endl;
     if (!def().external_def.object_def.user_provided) {
       return absl::InvalidArgumentError("External object is read-only");
     }
@@ -226,7 +226,7 @@ class DefaultTensorTie : public TensorTie {
   }
 
   absl::Status MaybeAllocateInternalObject() {
-    TFLITE_LOG(INFO) << "fsw in MaybeAllocateInternalObject...";
+    // TFLITE_LOG(INFO) << "fsw in MaybeAllocateInternalObject...";
 
     const TensorObjectDef& d = def().internal_def;
     if (d.object_def.user_provided) {
@@ -314,7 +314,7 @@ class TwoStepTensorTie : public TensorTie {
   }
 
   absl::Status CopyFromExternalObject() final {
-    TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject2 2..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject2 2..." << std::endl;
     RETURN_IF_ERROR(outer_tie_->CopyFromExternalObject());
     return inner_tie_->CopyFromExternalObject();
   }
@@ -454,45 +454,45 @@ class InferenceRunnerImpl : public InferenceRunner {
   }
 
   absl::Status Run() override {
-    TFLITE_LOG(INFO) << "fsw In Run(): " << std::endl;
+    // TFLITE_LOG(INFO) << "fsw In Run(): " << std::endl;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
     for (auto& obj : input_tensor_ties_) {
       RETURN_IF_ERROR(obj->CopyFromExternalObject());
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
-    std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
-    TFLITE_LOG(INFO) << "fsw copy input time: " << d.count() << "ms" << std::endl;
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw copy input time: " << duration_mcs.count() << "us" << std::endl;
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
+    // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
+    // TFLITE_LOG(INFO) << "fsw copy input time: " << d.count() << "ms" << std::endl;
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw copy input time: " << duration_mcs.count() << "us" << std::endl;
 
-    start = std::chrono::high_resolution_clock::now();
+    // start = std::chrono::high_resolution_clock::now();
 
     RETURN_IF_ERROR(runtime_->Execute());
 
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds2 = end - start;
-    std::chrono::milliseconds d2 = std::chrono::duration_cast< std::chrono::milliseconds >( ds2 );
-    TFLITE_LOG(INFO) << "fsw execute time: " << d2.count() << "ms" << std::endl;
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs2=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw execute time: " << duration_mcs2.count() << "us" << std::endl;
+    // end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds2 = end - start;
+    // std::chrono::milliseconds d2 = std::chrono::duration_cast< std::chrono::milliseconds >( ds2 );
+    // TFLITE_LOG(INFO) << "fsw execute time: " << d2.count() << "ms" << std::endl;
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs2=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw execute time: " << duration_mcs2.count() << "us" << std::endl;
 
 
-    start = std::chrono::high_resolution_clock::now();
+    // start = std::chrono::high_resolution_clock::now();
 
     for (auto& obj : output_tensor_ties_) {
       RETURN_IF_ERROR(obj->CopyToExternalObject());
     }
 
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds1 = end - start;
-    std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
-    TFLITE_LOG(INFO) << "fsw copy output time: " << d1.count() << "ms" << std::endl;
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw copy output time: " << duration_mcs1.count() << "us" << std::endl;
+    // end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds1 = end - start;
+    // std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
+    // TFLITE_LOG(INFO) << "fsw copy output time: " << d1.count() << "ms" << std::endl;
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw copy output time: " << duration_mcs1.count() << "us" << std::endl;
 
     RETURN_IF_ERROR(runtime_->command_queue()->Flush());
     if (output_to_cpu_) {

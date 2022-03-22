@@ -71,7 +71,7 @@ bool is_tensor_ptr_motified = false;
 void zero_copy(){
   // host-->device
   if(!input_idx_to_cl_mem.empty()){
-    TFLITE_LOG(INFO) << "zero_copy input:" ;
+    // TFLITE_LOG(INFO) << "zero_copy input:" ;
     
     for(auto& mp : input_idx_to_cl_mem){
       TfLiteTensor* tensor = &(original_tensor[mp.first]);
@@ -173,7 +173,7 @@ class DefaultTensorTie : public TensorTie {
  public:
   DefaultTensorTie(const TensorTieDef& def, TensorObject internal_obj)
       : TensorTie(def), internal_obj_(internal_obj) {
-          TFLITE_LOG(INFO) << "fsw in DefaultTensorTie... " << std::endl;
+          // TFLITE_LOG(INFO) << "fsw in DefaultTensorTie... " << std::endl;
       }
 
   static bool IsSupported(
@@ -197,7 +197,7 @@ class DefaultTensorTie : public TensorTie {
   static absl::Status New(const TensorTieDef& def, TensorObject internal_object,
                           TensorObjectConverterBuilder* converter_builder,
                           Environment* env, std::unique_ptr<TensorTie>* tie) {
-    TFLITE_LOG(INFO) << "fsw in New1..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in New1..." << std::endl;
     auto tie_impl = absl::make_unique<DefaultTensorTie>(def, internal_object);
     RETURN_IF_ERROR(tie_impl->Init(converter_builder, env));
     *tie = std::move(tie_impl);
@@ -214,7 +214,7 @@ class DefaultTensorTie : public TensorTie {
   }
 
   absl::Status CopyFromExternalObject() final {
-    TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject1..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in CopyFromExternalObject1..." << std::endl;
     if (!converter_from_) {
       return absl::UnavailableError("Conversion is not available");
     }
@@ -375,7 +375,7 @@ class TwoStepTensorTie : public TensorTie {
   absl::Status Init(TensorObject internal_object,
                     TensorObjectConverterBuilder* converter_builder,
                     Environment* env) {
-    TFLITE_LOG(INFO) << "fsw in init..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in init..." << std::endl;
     auto defs = MakeOuterInnerDefs(def());
     RETURN_IF_ERROR(DefaultTensorTie::New(defs.second, internal_object,
                                           converter_builder, env, &inner_tie_));
@@ -411,7 +411,7 @@ class GlBufferHolder : public TensorTie {
                           TensorObjectConverterBuilder* converter_builder,
                           GlInteropFabric* gl_interop_fabric, Environment* env,
                           std::unique_ptr<TensorTie>* tie) {
-    TFLITE_LOG(INFO) << "fsw in New2..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in New2..." << std::endl;
     
     auto tie_impl =
         absl::make_unique<GlBufferHolder>(def, gl_interop_fabric, env);
@@ -511,33 +511,33 @@ class TensorTieFactory {
 
   absl::Status NewTensorTie(const TensorTieDef& def,
                             std::unique_ptr<TensorTie>* tie) {
-    TFLITE_LOG(INFO) << "fsw in NewTensorTie..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in NewTensorTie..." << std::endl;
     
     TensorObject internal_object = TensorToObj(*context_.GetTensor(def.id));
-    TFLITE_LOG(INFO) << "def.id= " << def.id << std::endl;
+    // TFLITE_LOG(INFO) << "def.id= " << def.id << std::endl;
 
     auto converter = converter_builder_.get();
     if (NoopTensorTie::IsSupported(def)) {
-      TFLITE_LOG(INFO) << "fsw flag01..." << std::endl;
+      // TFLITE_LOG(INFO) << "fsw flag01..." << std::endl;
 
       *tie = absl::make_unique<NoopTensorTie>(def, internal_object);
       return absl::OkStatus();
     }
     if (DefaultTensorTie::IsSupported(def, *converter)) {
-      TFLITE_LOG(INFO) << "fsw flag00..." << std::endl;
+      // TFLITE_LOG(INFO) << "fsw flag00..." << std::endl;
 
       return DefaultTensorTie::New(def, internal_object, converter, &env_, tie);
     }
 #ifdef CL_DELEGATE_ALLOW_GL
     if (gl_interop_fabric_ && GlBufferHolder::IsSupported(def, *converter)) {
-      TFLITE_LOG(INFO) << "fsw flag02..." << std::endl;
+      // TFLITE_LOG(INFO) << "fsw flag02..." << std::endl;
       
       return GlBufferHolder::New(def, internal_object, converter,
                                  gl_interop_fabric_, &env_, tie);
     }
 #endif
     if (TwoStepTensorTie::IsSupported(def, *converter)) {
-      TFLITE_LOG(INFO) << "fsw flag03..." << std::endl;
+      // TFLITE_LOG(INFO) << "fsw flag03..." << std::endl;
 
       return TwoStepTensorTie::New(def, internal_object, converter, &env_, tie);
     }
@@ -631,7 +631,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
   }
 
   absl::Status SetInputObject(int index, TensorObject object) override {
-    TFLITE_LOG(INFO) << "fsw in SetInputObject..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in SetInputObject..." << std::endl;
     if (index < 0 || index >= inputs_.size()) {
       return absl::OutOfRangeError("Input index is out of range");
     }
@@ -668,7 +668,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     }
 #endif
     
-    TFLITE_LOG(INFO) << "fsw in run flag1... :" << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in run flag1... :" << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -697,26 +697,26 @@ class InferenceRunnerImpl : public CLInferenceRunner {
       error_code0 = clEnqueueUnmapMemObject(queue_->queue(), in_buffer, hostptr, 0, NULL, NULL);
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
-    std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
-    TFLITE_LOG(INFO) << "fsw map input time: " << d.count() << "ms";
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw map input time: " << duration_mcs.count() << "us";
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
+    // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
+    // TFLITE_LOG(INFO) << "fsw map input time: " << d.count() << "ms";
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw map input time: " << duration_mcs.count() << "us";
 
-    start = std::chrono::high_resolution_clock::now();
+    // start = std::chrono::high_resolution_clock::now();
 
     RETURN_IF_ERROR(RunWithoutExternalBufferCopy());
 
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds2 = end - start;
-    std::chrono::milliseconds d2 = std::chrono::duration_cast< std::chrono::milliseconds >( ds2 );
-    TFLITE_LOG(INFO) << "fsw execute time: " << d2.count() << "ms";
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs2=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw execute time: " << duration_mcs2.count() << "us";
+    // end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds2 = end - start;
+    // std::chrono::milliseconds d2 = std::chrono::duration_cast< std::chrono::milliseconds >( ds2 );
+    // TFLITE_LOG(INFO) << "fsw execute time: " << d2.count() << "ms";
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs2=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw execute time: " << duration_mcs2.count() << "us";
 
 
-    start = std::chrono::high_resolution_clock::now();
+    // start = std::chrono::high_resolution_clock::now();
 
     //device-->host
     // bool has_async_copies = false;
@@ -743,12 +743,12 @@ class InferenceRunnerImpl : public CLInferenceRunner {
       // error_code = clEnqueueUnmapMemObject(queue_->queue(), buffer, hostPtr, 0, NULL, NULL);
     }
 
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds1 = end - start;
-    std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
-    TFLITE_LOG(INFO) << "fsw map output time: " << d1.count() << "ms";
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG(INFO) << "fsw map output time: " << duration_mcs1.count() << "us";
+    // end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds1 = end - start;
+    // std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
+    // TFLITE_LOG(INFO) << "fsw map output time: " << d1.count() << "ms";
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG(INFO) << "fsw map output time: " << duration_mcs1.count() << "us";
 
     
 #ifdef CL_DELEGATE_ALLOW_GL
@@ -778,7 +778,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
   static absl::Status LinkTensors(
       const std::vector<TensorTieDef>& defs, TensorTieFactory* factory,
       std::vector<std::unique_ptr<TensorTie>>* objects) {
-    TFLITE_LOG(INFO) << "fsw in LinkTensors()." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in LinkTensors()." << std::endl;
 
     objects->reserve(defs.size());
     for (auto& def : defs) {
@@ -1005,11 +1005,11 @@ class InferenceBuilderImpl : public InferenceBuilder {
   // Links internal tensors with external user-facing objects.
   std::vector<TensorTieDef> LinkTensors(const std::vector<ValueId>& ids,
                                         AccessType access) {
-    TFLITE_LOG(INFO) << "fsw in LinkTensors..." << std::endl;                                      
+    // TFLITE_LOG(INFO) << "fsw in LinkTensors..." << std::endl;                                      
     std::vector<TensorTieDef> links;
     links.reserve(ids.size());
     for (const auto& id : ids) {
-      TFLITE_LOG(INFO) << "id = " << id;
+      // TFLITE_LOG(INFO) << "id = " << id;
 
       TensorObjectDef def = TensorToDef(*context_->GetTensor(id));
       links.push_back({id, access, def, def});

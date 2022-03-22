@@ -138,7 +138,7 @@ absl::Status InferenceContext::InitFromGraph(
   GpuModel gpu_model;
   RETURN_IF_ERROR(GraphToGpuModel(graph, create_info,
                                   env->GetDevicePtr()->GetInfo(), &gpu_model));
-  TFLITE_LOG(INFO) << "gpu_model.tensors.size()=" << gpu_model.tensors.size() << std::endl;
+  // TFLITE_LOG(INFO) << "gpu_model.tensors.size()=" << gpu_model.tensors.size() << std::endl;
   
   flatbuffers::FlatBufferBuilder builder;
   flatbuffers::Offset<tflite::gpu::data::GpuModel> gpu_model_fb;
@@ -153,7 +153,7 @@ absl::Status InferenceContext::InitFromGraph(
   creation_context.queue = env->queue();
   creation_context.cache = env->program_cache();
   for (const auto& external_tensor : create_info.external_immutable_tensors) {
-    TFLITE_LOG(INFO) << "in flag1...";
+    // TFLITE_LOG(INFO) << "in flag1...";
     auto* cl_spatial_tensor = dynamic_cast<Tensor*>(external_tensor.second);
     if (!cl_spatial_tensor) {
       return absl::InvalidArgumentError("Expected CLSpatialTensor.");
@@ -162,7 +162,7 @@ absl::Status InferenceContext::InitFromGraph(
   }
   std::map<ValueId, Tensor> temp_external_tensors;
   for (const auto& external_tensor : create_info.external_mutable_tensors) {
-    TFLITE_LOG(INFO) << "in flag2...";
+    // TFLITE_LOG(INFO) << "in flag2...";
     RETURN_IF_ERROR(CreateTensor(
         env->context(), tensors_descs_[external_tensor.first].shape,
         tensors_descs_[external_tensor.first],
@@ -175,12 +175,12 @@ absl::Status InferenceContext::InitFromGraph(
   RETURN_IF_ERROR(
       AllocateMemory(creation_context.GetGpuInfo(), creation_context.context));
   BindMemoryToOperations();
-  TFLITE_LOG(INFO) << "after BindMemoryToOperations...";
+  // TFLITE_LOG(INFO) << "after BindMemoryToOperations...";
   RETURN_IF_ERROR(Compile(creation_context));
-  TFLITE_LOG(INFO) << "in flag001...";                        
+  // TFLITE_LOG(INFO) << "in flag001...";                        
 
   RETURN_IF_ERROR(UpdateParams());
-  TFLITE_LOG(INFO) << "in flag002...";                        
+  // TFLITE_LOG(INFO) << "in flag002...";                        
 
   TuningType tuning_type = TuningType::kExhaustive;
   if (create_info.hints.Check(ModelHints::kFastTuning)) {
@@ -394,7 +394,7 @@ absl::Status InferenceContext::AllocateMemoryForVariableTensors(
 
 absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
                                                         CLContext* context) {
-  TFLITE_LOG(INFO) << "fsw in AllocateMemoryForBuffers... :" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in AllocateMemoryForBuffers... :" << std::endl;
   std::map<ValueId, int2> buffer_usages;
   GetUsages(
       [this, &gpu_info](ValueId id) {
@@ -402,7 +402,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
       },
       &buffer_usages);
 
-  TFLITE_LOG(INFO) << "buffer_usages.size()=" << buffer_usages.size() << std::endl;
+  // TFLITE_LOG(INFO) << "buffer_usages.size()=" << buffer_usages.size() << std::endl;
   // for(auto& mp : buffer_usages){
   //   TFLITE_LOG(INFO) << mp.first << "-->" << mp.second.x << " " << mp.second.y ;
   // }
@@ -449,7 +449,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
 
   OffsetsAssignment offset_assignment;
   if (CanUseSubBuffer(gpu_info)) {
-    TFLITE_LOG(INFO) << "fsw CanUseSubBuffer..." << std::endl;
+    // TFLITE_LOG(INFO) << "fsw CanUseSubBuffer..." << std::endl;
     RETURN_IF_ERROR(AssignOffsetsToTensors(
         buffer_usage_records, MemoryStrategy::GREEDY_BY_SIZE,
         &offset_assignment, base_align_bytes));
@@ -460,7 +460,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
   }
 
   if (use_offset_assignment) { //**
-    TFLITE_LOG(INFO) << "fsw in use_offset_assignment=1" << std::endl;
+    // TFLITE_LOG(INFO) << "fsw in use_offset_assignment=1" << std::endl;
     shared_buffers_.resize(offset_assignment.offsets.size());
     RETURN_IF_ERROR(CreateReadWriteBuffer(offset_assignment.total_size, context,
                                           &shared_buffers_parent_));
@@ -471,7 +471,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
     }
   } else {
     shared_buffers_.resize(buffer_assignment.object_sizes.size());
-    TFLITE_LOG(INFO) << "shared_buffers_.size()=" << shared_buffers_.size() << std::endl;
+    // TFLITE_LOG(INFO) << "shared_buffers_.size()=" << shared_buffers_.size() << std::endl;
 
     for (int i = 0; i < buffer_assignment.object_sizes.size(); ++i) {
       RETURN_IF_ERROR(CreateReadWriteBuffer(buffer_assignment.object_sizes[i],
@@ -479,7 +479,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
     }
   }
 
-  TFLITE_LOG(INFO) << "CLNode size = " << nodes_.size() << std::endl;
+  // TFLITE_LOG(INFO) << "CLNode size = " << nodes_.size() << std::endl;
 
   std::vector<bool> created_tensors(buffer_usage_records.size(), false);
   shared_buffer_tensors_.resize(buffer_usage_records.size());
@@ -489,7 +489,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
       if (GetTensorMemoryType(gpu_info, t.first) != TensorMemoryType::kBuffer)
         continue;
       const int tensor_index = graph_ids_to_shared_buffer_tensors_[t.first];
-      TFLITE_LOG(INFO) << "tensor_idx = " << tensor_index;
+      // TFLITE_LOG(INFO) << "tensor_idx = " << tensor_index;
       if (created_tensors[tensor_index]) continue;
       const auto& shape_5d = tensors_descs_[t.first].shape;
       const auto shape = BHWC(shape_5d.b, shape_5d.h, shape_5d.w, shape_5d.c);
@@ -525,7 +525,7 @@ absl::Status InferenceContext::AllocateMemoryForBuffers(const GpuInfo& gpu_info,
 
 absl::Status InferenceContext::AllocateMemoryForStrongShapes(
     const GpuInfo& gpu_info, CLContext* context) {
-  TFLITE_LOG(INFO) << "AllocateMemoryForStrongShapes..." ;
+  // TFLITE_LOG(INFO) << "AllocateMemoryForStrongShapes..." ;
   std::map<ValueId, int2> usages;
   GetUsages(
       [this, &gpu_info](ValueId id) {
@@ -567,7 +567,7 @@ absl::Status InferenceContext::AllocateMemoryForStrongShapes(
       }
       const auto& shape = tensors_descs_[t.first].shape;
       const auto id = assignment.object_ids[remap_from_graph_ids[t.first]];
-      TFLITE_LOG(INFO) << "fsw : id = " << id;
+      // TFLITE_LOG(INFO) << "fsw : id = " << id;
       graph_ids_to_strong_shape_tensors_[t.first] = id;
       const auto& it = strong_shape_tensors_.find(id);
       if (it == strong_shape_tensors_.end()) {
@@ -576,7 +576,7 @@ absl::Status InferenceContext::AllocateMemoryForStrongShapes(
       }
     }
   }
-  TFLITE_LOG(INFO) << "AllocateMemoryForStrongShapes over...";
+  // TFLITE_LOG(INFO) << "AllocateMemoryForStrongShapes over...";
   return absl::OkStatus();
 }
 
@@ -664,7 +664,7 @@ void InferenceContext::PrepareExternal() {
 
 absl::Status InferenceContext::AddToQueue(CLCommandQueue* queue) {
   //author:fu
-  TFLITE_LOG(INFO) << "fsw in AddToQueue... :" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in AddToQueue... :" << std::endl;
 
   if (recordable_queue_ && recordable_queue_->IsSupported()) {
     return recordable_queue_->Execute(queue);

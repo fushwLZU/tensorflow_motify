@@ -2673,7 +2673,7 @@ TfLiteIntArray* GetOpsToReplace(
     return true;
   };
 
-  TFLITE_LOG(INFO) << "fsw before Partition():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw before Partition():" << std::endl;
 
   delegates::FP16GraphPartitionHelper partition_helper(context,
                                                        node_supported_fn);
@@ -2683,7 +2683,7 @@ TfLiteIntArray* GetOpsToReplace(
   }
 
   //author:fu
-  TFLITE_LOG(INFO) << "fsw after Partition():" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw after Partition():" << std::endl;
   max_delegated_partitions = 3;
 
   // By default, we simply get 1st largest partition as 'max_delegate_partions'
@@ -2692,7 +2692,7 @@ TfLiteIntArray* GetOpsToReplace(
       partition_helper.GetNodesOfFirstNLargestPartitions(
           max_delegated_partitions);
 
-  TFLITE_LOG(INFO) << "fsw flag point: nums of ops_to_replace=" << ops_to_replace.size() << " max_delegated_partitions=" << max_delegated_partitions << std::endl;
+  // TFLITE_LOG(INFO) << "fsw flag point: nums of ops_to_replace=" << ops_to_replace.size() << " max_delegated_partitions=" << max_delegated_partitions << std::endl;
 
   if (!unsupported_nodes_info.empty() &&
       partition_helper.num_total_nodes() > ops_to_replace.size()) {
@@ -2777,19 +2777,19 @@ absl::Status BuildModel(TfLiteContext* context,
                         const TfLiteDelegateParams* delegate_params,
                         GraphFloat32* graph,
                         absl::flat_hash_map<int, int>* quant_conversion_map) {
-  TFLITE_LOG(INFO) << "fsw in BuildModel... " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in BuildModel... " << std::endl;
 
   std::vector<int> inputs(delegate_params->input_tensors->size);
   std::vector<int> outputs(delegate_params->output_tensors->size);
-  TFLITE_LOG(INFO) << "input_tensors idx: " << std::endl;
+  // TFLITE_LOG(INFO) << "input_tensors idx: " << std::endl;
   for (int i = 0; i < delegate_params->input_tensors->size; i++) {
     inputs[i] = delegate_params->input_tensors->data[i];
-    TFLITE_LOG(INFO) << inputs[i] << " ";
+    // TFLITE_LOG(INFO) << inputs[i] << " ";
   }
-  TFLITE_LOG(INFO) << "output_tensors idx: " << std::endl;
+  // TFLITE_LOG(INFO) << "output_tensors idx: " << std::endl;
   for (int i = 0; i < delegate_params->output_tensors->size; i++) {
     outputs[i] = delegate_params->output_tensors->data[i];
-    TFLITE_LOG(INFO) << outputs[i] << " ";
+    // TFLITE_LOG(INFO) << outputs[i] << " ";
   }
   return BuildModelEnforceIO(context, delegate_params, inputs, outputs, graph,
                              quant_conversion_map);

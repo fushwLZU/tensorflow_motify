@@ -107,7 +107,7 @@ TfLiteStatus FlexDelegate::CopyFromBufferHandle(
     TfLiteContext* context, TfLiteBufferHandle buffer_handle,
     TfLiteTensor* output) {
       
-  TFLITE_LOG(INFO) << "fsw In CopyFromBufferHandle flag1:" << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In CopyFromBufferHandle flag1:" << std::endl;
 
   flex::BufferMap* buffer_map = delegate_data_.GetBufferMap(context);
 
@@ -155,7 +155,7 @@ TfLiteStatus FlexDelegate::CopyFromBufferHandle(
     *tf_tensor_ptr = buffer_map->GetTensorPtr(buffer_handle);
 
     TfLiteTensorDataFree(output);
-    TFLITE_LOG(INFO) << "fsw in delegate.cc";
+    // TFLITE_LOG(INFO) << "fsw in delegate.cc";
 
     output->data.raw = reinterpret_cast<char*>(tf_tensor_ptr);
     output->bytes = required_bytes;

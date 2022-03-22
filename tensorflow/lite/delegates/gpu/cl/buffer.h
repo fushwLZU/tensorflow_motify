@@ -95,7 +95,7 @@ template <typename T>
 absl::Status Buffer::WriteData(CLCommandQueue* queue,
                                const absl::Span<T> data) {
   //author:fu
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In WriteData...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In WriteData...");
   
   if (size_ != sizeof(T) * data.size()) {
     return absl::InvalidArgumentError(

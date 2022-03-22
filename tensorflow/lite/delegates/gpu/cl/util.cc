@@ -173,10 +173,10 @@ bool OpenCLSupported() { return LoadOpenCL().ok(); }
 
 absl::Status CreateCLBuffer(cl_context context, int size_in_bytes,
                             bool read_only, void* data, cl_mem* result) {
-  TFLITE_LOG(INFO) << "fsw in CreateCLBuffer...";
+  // TFLITE_LOG(INFO) << "fsw in CreateCLBuffer...";
   cl_mem_flags flags = read_only ? CL_MEM_READ_ONLY : CL_MEM_READ_WRITE;
   if (data) {
-    TFLITE_LOG(INFO) << "CL_MEM_COPY_HOST_PTR...";
+    // TFLITE_LOG(INFO) << "CL_MEM_COPY_HOST_PTR...";
     flags |= CL_MEM_COPY_HOST_PTR;
   }
 
@@ -196,7 +196,7 @@ absl::Status CreateCLBuffer(cl_context context, int size_in_bytes,
 absl::Status CreateCLSubBuffer(cl_context context, cl_mem parent,
                                size_t origin_in_bytes, size_t size_in_bytes,
                                bool read_only, cl_mem* result) {
-  TFLITE_LOG(INFO) << "fsw in CreateCLSubBuffer...";
+  // TFLITE_LOG(INFO) << "fsw in CreateCLSubBuffer...";
                                
   cl_mem_flags flags = read_only ? CL_MEM_READ_ONLY : CL_MEM_READ_WRITE;
 

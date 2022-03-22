@@ -207,10 +207,10 @@ absl::Status ReserveGraphTensors(const CreateGpuModelInfo& create_info,
   auto tensors = graph.values();
 
   //author:fu
-  TFLITE_LOG(INFO) << "graph tensor size = " << tensors.size() << std::endl << "values idx:";
-  for (auto& t : tensors){
-    TFLITE_LOG(INFO) << t->id << " original_id = " << t->tensor.ref ;
-  }
+  // TFLITE_LOG(INFO) << "graph tensor size = " << tensors.size() << std::endl << "values idx:";
+  // for (auto& t : tensors){
+  //   TFLITE_LOG(INFO) << t->id << " original_id = " << t->tensor.ref ;
+  // }
   auto data_type = DeduceDataTypeFromPrecision(create_info.precision);
   for (auto& t : tensors) {
     const auto shape = graph.GetValue(t->id)->tensor.shape;
@@ -266,7 +266,7 @@ absl::Status ReserveGraphTensors(const CreateGpuModelInfo& create_info,
       }
     }
     tensor_desc.shape = BHWDC(shape.b, shape.h, shape.w, 1, shape.c);
-    TFLITE_LOG(INFO) << "gpu tensor add: " << t->id;
+    // TFLITE_LOG(INFO) << "gpu tensor add: " << t->id;
     tensor_reserver->Add(t->id, tensor_desc);
     max_id = std::max(max_id, t->id);
   }
@@ -432,7 +432,7 @@ absl::Status MergeNodes(GpuModel* gpu_model) {
 
 void CopyExternals(const GraphFloat32& graph, GpuModel* gpu_model) {
   const auto inputs = graph.inputs();
-  TFLITE_LOG(INFO) << "gpu_model inputs: " << std::endl;
+  // TFLITE_LOG(INFO) << "gpu_model inputs: " << std::endl;
 
   for (const auto& value : inputs) {
     gpu_model->input_ids_and_refs.push_back({value->id, value->tensor.ref});
@@ -440,21 +440,21 @@ void CopyExternals(const GraphFloat32& graph, GpuModel* gpu_model) {
     //author:fu
     input_idx_to_original.push_back(value->tensor.ref);
 
-    TFLITE_LOG(INFO) << "value_id= " << value->id << " value->tensor.ref " << value->tensor.ref << std::endl;
+    // TFLITE_LOG(INFO) << "value_id= " << value->id << " value->tensor.ref " << value->tensor.ref << std::endl;
   }
 
   const auto variable_inputs = graph.variable_inputs();
   for (const auto& value : variable_inputs) {
     gpu_model->variable_ids_and_refs.push_back({value->id, value->tensor.ref});
   }
-  TFLITE_LOG(INFO) << "gpu_model outputs: " << std::endl;
+  // TFLITE_LOG(INFO) << "gpu_model outputs: " << std::endl;
   const auto outputs = graph.outputs();
   for (const auto& value : outputs) {
     gpu_model->output_ids_and_refs.push_back({value->id, value->tensor.ref});
 
     //author:fu
     output_idx_to_original.push_back(value->tensor.ref);
-    TFLITE_LOG(INFO) << "value_id= " << value->id << " value->tensor.ref " << value->tensor.ref << std::endl;
+    // TFLITE_LOG(INFO) << "value_id= " << value->id << " value->tensor.ref " << value->tensor.ref << std::endl;
   }
 }
 

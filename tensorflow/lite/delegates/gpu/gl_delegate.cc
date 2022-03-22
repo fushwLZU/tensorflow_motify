@@ -99,7 +99,7 @@ class Delegate {
   absl::Status CopyFromBufferHandle(TfLiteBufferHandle handle,
                                     TfLiteTensor* tensor) {
     
-    TFLITE_LOG(INFO) << "fsw In CopyFromBufferHandle2:" << std::endl;
+    // TFLITE_LOG(INFO) << "fsw In CopyFromBufferHandle2:" << std::endl;
 
     ValueRef ref;
     RETURN_IF_ERROR(FindObject(handle, &ref));
@@ -115,7 +115,7 @@ class Delegate {
   absl::Status CopyToBufferHandle(TfLiteBufferHandle handle,
                                   TfLiteTensor* tensor) const {
                                     
-    TFLITE_LOG(INFO) << "fsw In CopyToBufferHandle 2:" << std::endl;
+    // TFLITE_LOG(INFO) << "fsw In CopyToBufferHandle 2:" << std::endl;
     
     ValueRef ref;
     RETURN_IF_ERROR(FindObject(handle, &ref));
@@ -284,7 +284,7 @@ class Delegate {
   }
 
   absl::Status Invoke(TfLiteContext* context) {
-    TFLITE_LOG(INFO) << "fsw In gl invoke: " << std::endl;
+    // TFLITE_LOG(INFO) << "fsw In gl invoke: " << std::endl;
 
     const EGLContext egl_context_at_delegate_init = env_->context().context();
     const EGLContext egl_context_at_delegate_invoke = eglGetCurrentContext();
@@ -432,7 +432,7 @@ TfLiteStatus DelegateCopyFromBufferHandle(TfLiteContext* context,
                                           TfLiteDelegate* delegate,
                                           TfLiteBufferHandle buffer_handle,
                                           TfLiteTensor* tensor) {
-  TFLITE_LOG(INFO) << "fsw In DelegateCopyFromBufferHandle: " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In DelegateCopyFromBufferHandle: " << std::endl;
   auto* gpu_delegate = GetGpuDelegate(delegate);
   if (!gpu_delegate) return kTfLiteError;
   const auto status = gpu_delegate->CopyFromBufferHandle(buffer_handle, tensor);
@@ -446,7 +446,7 @@ TfLiteStatus DelegateCopyToBufferHandle(TfLiteContext* context,
                                         TfLiteDelegate* delegate,
                                         TfLiteBufferHandle buffer_handle,
                                         TfLiteTensor* tensor) {
-  TFLITE_LOG(INFO) << "fsw In DelegateCopyToBufferHandle: " << std::endl;
+  // TFLITE_LOG(INFO) << "fsw In DelegateCopyToBufferHandle: " << std::endl;
   
   auto* gpu_delegate = GetGpuDelegate(delegate);
   if (!gpu_delegate) return kTfLiteError;

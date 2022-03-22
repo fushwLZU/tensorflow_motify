@@ -310,7 +310,7 @@ TfLiteStatus BenchmarkModel::Run() {
 }
 
 TfLiteStatus BenchmarkModel::ParseFlags(int* argc, char** argv) {
-  TFLITE_LOG(INFO) << "fsw in ParseFlags...";
+  // TFLITE_LOG(INFO) << "fsw in ParseFlags...";
   auto flag_list = GetFlags();
   const bool parse_result =
       Flags::Parse(argc, const_cast<const char**>(argv), flag_list);

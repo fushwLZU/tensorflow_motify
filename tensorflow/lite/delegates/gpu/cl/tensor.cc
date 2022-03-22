@@ -42,11 +42,11 @@ namespace {
 absl::Status AllocateTensorMemory(const CLContext& context, const BHWDC& shape,
                                   const TensorDescriptor& descriptor,
                                   const void* data_ptr, CLMemory* result) {
-  TFLITE_LOG(INFO) << "fsw in AllocateTensorMemory(tensor.cc)..." << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in AllocateTensorMemory(tensor.cc)..." << std::endl;
   const int slices = DivideRoundUp(shape.c, 4);
   cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
   if (data_ptr) {
-    TFLITE_LOG(INFO) << "CL_MEM_COPY_HOST_PTR..." << std::endl;
+    // TFLITE_LOG(INFO) << "CL_MEM_COPY_HOST_PTR..." << std::endl;
 
     mem_flags |= CL_MEM_COPY_HOST_PTR;
   }
@@ -63,7 +63,7 @@ absl::Status AllocateTensorMemory(const CLContext& context, const BHWDC& shape,
     case TensorStorageType::IMAGE_BUFFER: {
       const size_t data_size = shape.b * shape.w * shape.h * shape.d * slices *
                                4 * SizeOf(descriptor.data_type);
-      TFLITE_LOG(INFO) << "clCreateBuffer..." << std::endl;
+      // TFLITE_LOG(INFO) << "clCreateBuffer..." << std::endl;
       
       cl_int error_code;
       cl_mem memory = clCreateBuffer(context.context(), mem_flags, data_size,

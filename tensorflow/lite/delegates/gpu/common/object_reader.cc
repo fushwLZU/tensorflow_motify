@@ -37,8 +37,8 @@ absl::Status ObjectReader::ReadNonConstantTensor(
     TfLiteContext* context, absl::flat_hash_map<int, Value*>* tensor_to_value,
     absl::flat_hash_map<int, int>* quant_conversion_map, GraphFloat32* graph,
     uint32_t tensor_idx, Value** value) {
-  TFLITE_LOG(INFO) << "fsw in ReadNonConstantTensor..." << std::endl;
-  TFLITE_LOG(INFO) << "tensor_idx=" << tensor_idx << std::endl;
+  // TFLITE_LOG(INFO) << "fsw in ReadNonConstantTensor..." << std::endl;
+  // TFLITE_LOG(INFO) << "tensor_idx=" << tensor_idx << std::endl;
 
   if (tensor_idx >= context->tensors_size) {
     return absl::OutOfRangeError(
@@ -58,7 +58,7 @@ absl::Status ObjectReader::ReadNonConstantTensor(
       // Quantized case
       if (quant_conversion_map->find(tensor_idx) ==
           quant_conversion_map->end()) {
-        TFLITE_LOG(INFO) << "Quantized case:" << std::endl;
+        // TFLITE_LOG(INFO) << "Quantized case:" << std::endl;
         // Since the original tensor is fixed-point, add a new float tensor to
         // the TFLite graph to represent the dequantized data.
         int fp_tensor_index = 0;
@@ -89,11 +89,11 @@ absl::Status ObjectReader::ReadNonConstantTensor(
       // We do not use the original tensor index as reference for the GPU
       // Value, instead pointing at the corresponding float version.
       tensor_idx = quant_conversion_map->at(tensor_idx);
-      TFLITE_LOG(INFO) << "tensor_idx=" << tensor_idx << std::endl;
+      // TFLITE_LOG(INFO) << "tensor_idx=" << tensor_idx << std::endl;
 
     } else {
       // Floating-point case.
-      TFLITE_LOG(INFO) << "Floating-point case:" << std::endl;
+      // TFLITE_LOG(INFO) << "Floating-point case:" << std::endl;
 
       Value* value = graph->NewValue();
       RETURN_IF_ERROR(

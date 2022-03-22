@@ -84,7 +84,7 @@ void Interpreter::SetCancellationFunction(void* data,
 bool Interpreter::IsCancelled() { return primary_subgraph().IsCancelled(); }
 
 TfLiteStatus Interpreter::ModifyGraphWithDelegate(TfLiteDelegate* delegate) {
-  TFLITE_LOG(INFO) << "fsw in ModifyGraphWithDelegate";
+  // TFLITE_LOG(INFO) << "fsw in ModifyGraphWithDelegate";
   TfLiteStatus status = kTfLiteOk;
   for (auto& subgraph : subgraphs_) {
     if (IsValidationSubgraph(subgraph->GetName().c_str())) {
@@ -100,7 +100,7 @@ TfLiteStatus Interpreter::ModifyGraphWithDelegate(TfLiteDelegate* delegate) {
   if (status == kTfLiteDelegateError) {
     TF_LITE_ENSURE_STATUS(RemoveAllDelegates());
   }
-  TFLITE_LOG(INFO) << "fsw after ModifyGraphWithDelegate";
+  // TFLITE_LOG(INFO) << "fsw after ModifyGraphWithDelegate";
 
   //author:fu
   zero_copy();

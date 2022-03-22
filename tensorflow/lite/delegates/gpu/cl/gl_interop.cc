@@ -274,7 +274,7 @@ absl::Status GlClBufferCopier::Convert(const TensorObject& input_obj,
                                        const TensorObject& output_obj) {
   
   //author:fu
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In gl Convert...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In gl Convert...");
 
   if (absl::holds_alternative<OpenGlBuffer>(input_obj)) {
     auto ssbo = absl::get_if<OpenGlBuffer>(&input_obj);

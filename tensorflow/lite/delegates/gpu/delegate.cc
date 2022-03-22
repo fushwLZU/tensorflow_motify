@@ -183,7 +183,7 @@ class DelegateKernel {
     // indices and set all input and output tensors from tflite later.
     input_indices_.reserve(input_refs.size());
     for (uint32_t tensor_index : input_refs) {
-      TFLITE_LOG_PROD(TFLITE_LOG_INFO,"input_idx = %d",tensor_index);
+      // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"input_idx = %d",tensor_index);
       const int64_t object_index = input_indices_.size();
       input_indices_.push_back(tensor_index);
       RETURN_IF_ERROR(
@@ -191,7 +191,7 @@ class DelegateKernel {
     }
     output_indices_.reserve(output_refs.size());
     for (uint32_t tensor_index : output_refs) {
-      TFLITE_LOG_PROD(TFLITE_LOG_INFO,"output_idx = %d",tensor_index);
+      // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"output_idx = %d",tensor_index);
       const int64_t object_index = output_indices_.size();
       output_indices_.push_back(tensor_index);
       RETURN_IF_ERROR(builder->SetOutputObjectDef(object_index,
@@ -237,7 +237,7 @@ class DelegateKernel {
 
   absl::Status Invoke(TfLiteContext* context) {
 
-    TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In invokeflag0: ");
+    // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In invokeflag0: ");
 
     if (thread_id_prepare_ != std::this_thread::get_id()) {
       TFLITE_LOG(tflite::TFLITE_LOG_WARNING,
@@ -256,16 +256,16 @@ class DelegateKernel {
     }
     RETURN_IF_ERROR(SetInputsAndOutputs(context));
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
     RETURN_IF_ERROR(runner_->Run());
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
-    std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
-    TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw run time = %f ms, ",d.count());
-    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw run time = %f us, ",duration_mcs.count());
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
+    // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
+    // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw run time = %f ms, ",d.count());
+    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw run time = %f us, ",duration_mcs.count());
 
     if (is_dequant_required) {
       RETURN_IF_ERROR(
@@ -276,14 +276,14 @@ class DelegateKernel {
 
  private:
   absl::Status SetInputsAndOutputs(TfLiteContext* context) {
-    TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw in SetInputsAndOutputs...");
+    // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw in SetInputsAndOutputs...");
     for (int i = 0; i < input_indices_.size(); ++i) {
-      TFLITE_LOG_PROD(TFLITE_LOG_INFO,"input_indices_: %d",input_indices_[i]);
+      // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"input_indices_: %d",input_indices_[i]);
       RETURN_IF_ERROR(runner_->SetInputObject(
           i, GetTensorObject(input_indices_[i], context)));
     }
     for (int i = 0; i < output_indices_.size(); ++i) {
-      TFLITE_LOG_PROD(TFLITE_LOG_INFO,"output_indices_: %d",output_indices_[i]);
+      // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"output_indices_: %d",output_indices_[i]);
       RETURN_IF_ERROR(runner_->SetOutputObject(
           i, GetTensorObject(output_indices_[i], context)));
     }

@@ -220,7 +220,7 @@ absl::Status Tensor::WriteDataBHWDC(const T* in, CLCommandQueue* queue) {
   }
 
   //author:fu
-  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In WriteDataBHWDC...");
+  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw In WriteDataBHWDC...");
 
   switch (descriptor_.storage_type) {
     case TensorStorageType::BUFFER:
