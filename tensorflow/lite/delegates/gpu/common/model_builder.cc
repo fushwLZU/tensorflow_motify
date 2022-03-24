@@ -2684,7 +2684,7 @@ TfLiteIntArray* GetOpsToReplace(
 
   //author:fu
   // TFLITE_LOG(INFO) << "fsw after Partition():" << std::endl;
-  max_delegated_partitions = 3;
+  max_delegated_partitions = 10;
 
   // By default, we simply get 1st largest partition as 'max_delegate_partions'
   // is set to 1 by default.

@@ -32,6 +32,9 @@ limitations under the License.
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#define __USE_GNU
+#include <sched.h>
+#include <pthread.h>
 
 #include "tensorflow/lite/allocation.h"
 #include "tensorflow/lite/builtin_ops.h"
@@ -1168,8 +1171,27 @@ TfLiteStatus Subgraph::RemoveUnusedInputs() {
   return kTfLiteOk;
 }
 
+std::mutex iomutex;
 //author:Fu
 TfLiteStatus Subgraph::parallel_execute(std::vector<int> nodes){
+  // if(nodes.size()==1){//gpu
+  //   std::lock_guard<std::mutex> iolock(iomutex);
+  //   cpu_set_t cpuset;
+  //   CPU_ZERO(&cpuset);
+  //   CPU_SET(6, &cpuset);
+  //   if(sched_setaffinity(0, sizeof(cpuset), &cpuset) < 0)
+  //           perror("sched_setaffinity");
+  //   TFLITE_LOG(INFO) << "Thread gpubranch" << ": on CPU " << sched_getcpu() ;
+  // }
+  // else{
+  //   std::lock_guard<std::mutex> iolock(iomutex);
+  //   cpu_set_t cpuset;
+  //   CPU_ZERO(&cpuset);
+  //   CPU_SET(6, &cpuset);
+  //   if(sched_setaffinity(0, sizeof(cpuset), &cpuset) < 0)
+  //           perror("sched_setaffinity");
+  //   TFLITE_LOG(INFO) << "Thread cpubranch" << ": on CPU " << sched_getcpu() ;
+  // }
   for(auto& node_index : nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
@@ -1373,7 +1395,7 @@ TfLiteStatus Subgraph::Invoke() {
     // resize of a dynamic tensor.
     if (tensor_resized_since_op_invoke_ &&
         HasDynamicTensor(context_, node.outputs, nullptr)) {
-      // TFLITE_LOG(INFO) << "HasDynamicTensor" ;
+      TFLITE_LOG(INFO) << "HasDynamicTensor" ;
       next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
 
       // This happens when an intermediate dynamic tensor is resized.
@@ -1395,6 +1417,12 @@ TfLiteStatus Subgraph::Invoke() {
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
       std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
       std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
+      // cpu_set_t cpuset;
+      // CPU_ZERO(&cpuset);
+      // CPU_SET(5, &cpuset);
+      // int rc = pthread_setaffinity_np(branch1.native_handle(),
+      //                                 sizeof(cpu_set_t), &cpuset);
+                                      
       std::thread branch2(&Subgraph::parallel_execute, this, gpu_node);
       branch1.join();
       branch2.join();
@@ -1402,6 +1430,7 @@ TfLiteStatus Subgraph::Invoke() {
       // TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;
     }
   }
+  
   auto end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
     // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
