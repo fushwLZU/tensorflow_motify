@@ -192,12 +192,12 @@ class Subgraph {
   friend class Interpreter;
   friend class SingleOpModel;
 
-  std::vector<int>* cpu_nodes_;
-  std::vector<int>* gpu_nodes_;
-  std::mutex nodes_protect;
-  Semaphore semaphore;
+  // std::vector<int>* cpu_nodes_;
+  // std::vector<int>* gpu_nodes_;
+  // std::mutex nodes_protect;
+  // Semaphore semaphore;
   Semaphore finish;
-  bool is_cpu;
+  // bool is_cpu;
 
   Subgraph(ErrorReporter* error_reporter,
            TfLiteExternalContext** external_contexts,
@@ -215,7 +215,7 @@ class Subgraph {
 
   //author:fu
   // TfLiteStatus parallel_execute(std::vector<int> nodes);
-  TfLiteStatus parallel_execute();
+  TfLiteStatus parallel_execute(std::vector<int>& nodes);
 
   // Provide a list of tensor indexes that are inputs to the model.
   // Each index is bound check and this modifies the consistent_ flag of the

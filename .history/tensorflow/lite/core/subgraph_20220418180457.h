@@ -24,6 +24,11 @@ limitations under the License.
 #include <memory>
 #include <utility>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <list>
+#include <exception>
 
 #include "tensorflow/lite/allocation.h"
 #include "tensorflow/lite/c/common.h"
@@ -35,7 +40,143 @@ limitations under the License.
 #include "tensorflow/lite/graph_info.h"
 #include "tensorflow/lite/memory_planner.h"
 #include "tensorflow/lite/util.h"
+// #include "tensorflow/lite/tools/logging.h"
 
+
+
+class Semaphore {
+public:
+  Semaphore(int count = 0) : count_(count) {
+  }
+  Semaphore& operator=(const Semaphore&s){
+    this->count_ = s.count_;
+    return *this;
+  }
+
+
+  void Signal() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    ++count_;
+    cv_.notify_one();
+  }
+
+  void Wait() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv_.wait(lock, [=] { return count_ > 0; });  //while(count<=0)
+    --count_;
+  }
+
+private:
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  int count_;
+};
+
+// template <typename T>
+// class threadpool
+// {
+// public:
+//     threadpool(int thread_number = 8, int max_requests = 10000);
+//     ~threadpool();
+
+//     // 向线程池添加任务
+//     bool append(T *request);
+
+// private:
+//     // 线程运行的函数, 它从工作队列取出任务并执行
+//     static void* worker(void* arg);
+
+//     void run();
+
+// private:
+//     // 线程数量
+//     int m_thread_number;
+
+//     // 描述线程池的数组
+//     std::vector<std::thread> m_threads;
+
+//     // 请求队列中最多允许的、等待处理的请求数量
+//     int m_max_requests;
+
+//     // 请求队列
+//     std::list<T *> m_work_queue;
+
+//     // 保护请求队列的互斥锁
+//     std::mutex m_queue_mutex;
+
+//     // 是否有任务要处理
+//     Semaphore m_queue_stat;
+
+//     // 是否结束线程
+//     bool m_stop;
+// };
+
+// template<typename T>
+// threadpool<T>::threadpool(int thread_number, int max_requests) :
+//         m_thread_number(thread_number), m_max_requests(max_requests),
+//         m_stop(false), m_threads(std::vector<std::thread>()) { 
+//     // 判断参数是否合法
+//     // if(thread_number <= 0 || max_requests <= 0) {
+//     //     throw std::exception();
+//     // }
+
+//     // 创建线程并detach
+//     for(int i = 0; i < m_thread_number; ++i) {
+//         m_threads.emplace_back(std::thread(worker, this));
+//         m_threads.rbegin()->detach();
+//     }  
+// }
+
+
+// template<typename T>
+// threadpool<T>::~threadpool() {
+//     m_stop = true;
+// }
+
+// template<typename T>
+// bool threadpool<T>::append(T *request){
+
+//     // 为工作队列加锁
+//     std::lock_guard<std::mutex> queue_lock(m_queue_mutex);
+//     // TFLITE_LOG(INFO) << "this is a break point3...";
+//     // 判断是否超出工作队列的最大值
+//     if(m_work_queue.size() > m_max_requests) {
+//         return false;
+//     }
+
+//     m_work_queue.push_back(request);
+//     m_queue_stat.Signal();
+//     // TFLITE_LOG(INFO) << "this is a break point4...";
+
+//     return true;
+// }
+
+// template<typename T>
+// void* threadpool<T>::worker(void *arg) {
+//     threadpool *pool = (threadpool*) arg;
+//     pool->run();
+//     return pool;
+// }
+
+// template<typename T>
+// void threadpool<T>::run() {
+//     while(!m_stop) {
+//         m_queue_stat.Wait();
+//         m_queue_mutex.lock();
+//         if(m_work_queue.empty()) {
+//             m_queue_mutex.unlock();
+//             continue;
+//         }
+//         T* request = m_work_queue.front();
+//         m_work_queue.pop_front();
+//         m_queue_mutex.unlock();
+
+//         if(!request) {
+//             continue;
+//         }
+//         request->parallel_execute();
+//     }
+// }
 namespace tflite {
 
 class SingleOpModel;  // Class for friend declarations.
@@ -51,6 +192,13 @@ class Subgraph {
   friend class Interpreter;
   friend class SingleOpModel;
 
+  // std::vector<int>* cpu_nodes_;
+  // std::vector<int>* gpu_nodes_;
+  // std::mutex nodes_protect;
+  // Semaphore semaphore;
+  Semaphore finish;
+  // bool is_cpu;
+
   Subgraph(ErrorReporter* error_reporter,
            TfLiteExternalContext** external_contexts,
            std::vector<std::unique_ptr<Subgraph>>* subgraphs,
@@ -64,6 +212,10 @@ class Subgraph {
   Subgraph(Subgraph&&) = default;
   Subgraph& operator=(const Subgraph&) = delete;
   virtual ~Subgraph();
+
+  //author:fu
+  // TfLiteStatus parallel_execute(std::vector<int> nodes);
+  TfLiteStatus parallel_execute(std::vector<int>& nodes);
 
   // Provide a list of tensor indexes that are inputs to the model.
   // Each index is bound check and this modifies the consistent_ flag of the
@@ -191,6 +343,11 @@ class Subgraph {
   }
 
   size_t tensors_size() const { return tensors_.size(); }
+
+  //author:fu
+  TfLiteTensor* tensors_ptr(){
+    return tensors_.data();
+  }
 
   // Return the number of ops in the model.
   size_t nodes_size() const { return nodes_and_registration_.size(); }

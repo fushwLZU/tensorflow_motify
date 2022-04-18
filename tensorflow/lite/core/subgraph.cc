@@ -32,6 +32,7 @@ limitations under the License.
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <deque>
 #define __USE_GNU
 #include <sched.h>
 #include <pthread.h>
@@ -67,111 +68,180 @@ extern std::vector<std::vector<int>> gpu_partition_nodes;
 extern int total_nodes_nums;
 extern int gpu_partition_num;
 
-template <typename T>
-class threadpool
+// template <typename T>
+// class threadpool
+// {
+// public:
+//     threadpool(int thread_number = 8, int max_requests = 10000);
+//     ~threadpool();
+
+//     // 向线程池添加任务
+//     bool append(T *request);
+
+// private:
+//     // 线程运行的函数, 它从工作队列取出任务并执行
+//     static void* worker(void* arg);
+
+//     void run();
+
+// private:
+//     // 线程数量
+//     int m_thread_number;
+
+//     // 描述线程池的数组
+//     std::vector<std::thread> m_threads;
+
+//     // 请求队列中最多允许的、等待处理的请求数量
+//     int m_max_requests;
+
+//     // 请求队列
+//     std::list<T *> m_work_queue;
+
+//     // 保护请求队列的互斥锁
+//     std::mutex m_queue_mutex;
+
+//     // 是否有任务要处理
+//     Semaphore m_queue_stat;
+
+//     // 是否结束线程
+//     bool m_stop;
+// };
+
+// template<typename T>
+// threadpool<T>::threadpool(int thread_number, int max_requests) :
+//         m_thread_number(thread_number), m_max_requests(max_requests),
+//         m_stop(false), m_threads(std::vector<std::thread>()) { 
+//     // 判断参数是否合法
+//     // if(thread_number <= 0 || max_requests <= 0) {
+//     //     throw std::exception();
+//     // }
+
+//     // 创建线程并detach
+//     for(int i = 0; i < m_thread_number; ++i) {
+//         m_threads.emplace_back(std::thread(worker, this));
+//         m_threads.rbegin()->detach();
+//     }  
+// }
+
+
+// template<typename T>
+// threadpool<T>::~threadpool() {
+//     m_stop = true;
+// }
+
+// template<typename T>
+// bool threadpool<T>::append(T *request){
+//     TFLITE_LOG(INFO) << "this is a break point5...";
+
+//     // 为工作队列加锁
+//     std::lock_guard<std::mutex> queue_lock(m_queue_mutex);
+//     TFLITE_LOG(INFO) << "this is a break point3...";
+//     // 判断是否超出工作队列的最大值
+//     if(m_work_queue.size() > m_max_requests) {
+//         return false;
+//     }
+
+//     m_work_queue.push_back(request);
+//     m_queue_stat.Signal();
+//     TFLITE_LOG(INFO) << "this is a break point4...";
+
+//     return true;
+// }
+
+// template<typename T>
+// void* threadpool<T>::worker(void *arg) {
+//     threadpool *pool = (threadpool*) arg;
+//     pool->run();
+//     return pool;
+// }
+
+// template<typename T>
+// void threadpool<T>::run() {
+//     while(!m_stop) {
+//         m_queue_stat.Wait();
+//         m_queue_mutex.lock();
+//         if(m_work_queue.empty()) {
+//             m_queue_mutex.unlock();
+//             continue;
+//         }
+//         T* request = m_work_queue.front();
+//         m_work_queue.pop_front();
+//         m_queue_mutex.unlock();
+
+//         if(!request) {
+//             continue;
+//         }
+//         request->parallel_execute();
+//     }
+// }
+
+class ThreadPool
 {
 public:
-    threadpool(int thread_number = 8, int max_requests = 10000);
-    ~threadpool();
+	ThreadPool(int n);
+	~ThreadPool();
 
-    // 向线程池添加任务
-    bool append(T *request);
-
-private:
-    // 线程运行的函数, 它从工作队列取出任务并执行
-    static void* worker(void* arg);
-
-    void run();
+	void pushTask(std::function<TfLiteStatus(std::vector<int>&)> task, std::vector<int>& node);
+	void waitAllTask();
 
 private:
-    // 线程数量
-    int m_thread_number;
+	std::vector<std::thread*> threadPool;
+	std::deque<std::pair<std::function<TfLiteStatus(std::vector<int>&)>,std::vector<int>>> taskQueue;
+	std::atomic<int> busyCount {0};
+  
+	bool bStop = false;
 
-    // 描述线程池的数组
-    std::vector<std::thread> m_threads;
-
-    // 请求队列中最多允许的、等待处理的请求数量
-    int m_max_requests;
-
-    // 请求队列
-    std::list<T *> m_work_queue;
-
-    // 保护请求队列的互斥锁
-    std::mutex m_queue_mutex;
-
-    // 是否有任务要处理
-    Semaphore m_queue_stat;
-
-    // 是否结束线程
-    bool m_stop;
+	void taskConsumer();
+	std::mutex taskQueueMutex;
+	std::condition_variable taskQueueCond;
+	std::condition_variable taskFinishedCond;
 };
-
-template<typename T>
-threadpool<T>::threadpool(int thread_number, int max_requests) :
-        m_thread_number(thread_number), m_max_requests(max_requests),
-        m_stop(false), m_threads(std::vector<std::thread>()) { 
-    // 判断参数是否合法
-    // if(thread_number <= 0 || max_requests <= 0) {
-    //     throw std::exception();
-    // }
-
-    // 创建线程并detach
-    for(int i = 0; i < m_thread_number; ++i) {
-        m_threads.emplace_back(std::thread(worker, this));
-        m_threads.rbegin()->detach();
-    }  
+ThreadPool::ThreadPool(int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		std::thread *t = new std::thread(&ThreadPool::taskConsumer,this);
+		threadPool.push_back(t);
+		t->detach();
+	}
 }
 
-
-template<typename T>
-threadpool<T>::~threadpool() {
-    m_stop = true;
+ThreadPool::~ThreadPool()
+{
+	while (!threadPool.empty())
+	{
+		std::thread *t = threadPool.back();
+		threadPool.pop_back();
+		delete t;
+	}
 }
 
-template<typename T>
-bool threadpool<T>::append(T *request){
-    TFLITE_LOG(INFO) << "this is a break point5...";
-
-    // 为工作队列加锁
-    std::lock_guard<std::mutex> queue_lock(m_queue_mutex);
-    TFLITE_LOG(INFO) << "this is a break point3...";
-    // 判断是否超出工作队列的最大值
-    if(m_work_queue.size() > m_max_requests) {
-        return false;
-    }
-
-    m_work_queue.push_back(request);
-    m_queue_stat.Signal();
-    TFLITE_LOG(INFO) << "this is a break point4...";
-
-    return true;
+void ThreadPool::pushTask(std::function<TfLiteStatus(std::vector<int>&)> task, std::vector<int>& node)
+{
+	{
+		// cout<<"push"<<endl;
+		std::lock_guard<std::mutex> guard(taskQueueMutex);
+		taskQueue.push_back(std::make_pair(std::move(task),node));
+	}
+	taskQueueCond.notify_one();
 }
-
-template<typename T>
-void* threadpool<T>::worker(void *arg) {
-    threadpool *pool = (threadpool*) arg;
-    pool->run();
-    return pool;
-}
-
-template<typename T>
-void threadpool<T>::run() {
-    while(!m_stop) {
-        m_queue_stat.Wait();
-        m_queue_mutex.lock();
-        if(m_work_queue.empty()) {
-            m_queue_mutex.unlock();
-            continue;
-        }
-        T* request = m_work_queue.front();
-        m_work_queue.pop_front();
-        m_queue_mutex.unlock();
-
-        if(!request) {
-            continue;
-        }
-        request->parallel_execute();
-    }
+void ThreadPool::taskConsumer()
+{
+	while (!bStop)
+	{
+		std::unique_lock<std::mutex> lk(taskQueueMutex);
+		// cout<<"point..."<<endl;
+		taskQueueCond.wait(lk, [&] {return !taskQueue.empty(); });
+		busyCount++;
+    	// cout << "busycount=" << busyCount<< endl;
+		std::function<TfLiteStatus(std::vector<int>&)> task = taskQueue.front().first;
+    std::vector<int>& nodes = taskQueue.front().second;
+		taskQueue.pop_front();
+		lk.unlock();
+		task(nodes);
+		busyCount--;
+		taskFinishedCond.notify_one();
+	}
 }
 
 namespace tflite {
@@ -1282,7 +1352,7 @@ TfLiteStatus Subgraph::RemoveUnusedInputs() {
 
 std::mutex iomutex;
 //author:Fu
-TfLiteStatus Subgraph::parallel_execute(){
+TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
   // if(nodes.size()==1){//gpu
   //   std::lock_guard<std::mutex> iolock(iomutex);
   //   cpu_set_t cpuset;
@@ -1302,15 +1372,15 @@ TfLiteStatus Subgraph::parallel_execute(){
   //   TFLITE_LOG(INFO) << "Thread cpubranch" << ": on CPU " << sched_getcpu() ;
   // }
   
-  std::vector<int>* nodes;
-  if(is_cpu){
-    nodes = cpu_nodes_;
-  }else{
-    nodes = gpu_nodes_;
-  }
-  semaphore.Signal();
+  // std::vector<int>* nodes;
+  // if(is_cpu){
+  //   nodes = cpu_nodes_;
+  // }else{
+  //   nodes = gpu_nodes_;
+  // }
+  // semaphore.Signal();
 
-  for(auto& node_index : *nodes){
+  for(auto& node_index : nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
@@ -1432,7 +1502,9 @@ TfLiteStatus Subgraph::Invoke() {
   
   int current_gpu_partition = 0;
 
-  threadpool<Subgraph> ThreadPool(2,2);
+  // threadpool<Subgraph> ThreadPool(2,2);
+  ThreadPool pool(2);
+
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -1534,31 +1606,28 @@ TfLiteStatus Subgraph::Invoke() {
     }
     // Release dynamic tensor memory if configured by the user.
     MaybeReleaseDynamicInputs(node, node_index);
-    TFLITE_LOG(INFO) << "this is a break point0...";
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
       // std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
       // std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
-      
-      TFLITE_LOG(INFO) << "this is a break point1...";
                                       
       // std::thread branch2(&Subgraph::parallel_execute, this, gpu_node);
       // branch1.join();
       // branch2.join();
-      semaphore = Semaphore(0);
+      // semaphore = Semaphore(0);
       finish = Semaphore(-1);
-      is_cpu = false;  
-      this->gpu_nodes_ = &gpu_partition_nodes[current_gpu_partition++];
-      
-      TFLITE_LOG(INFO) << "this is a break point2...";
-      ThreadPool.append(this);
+      // is_cpu = false;  
+      // this->gpu_nodes_ = &gpu_partition_nodes[current_gpu_partition++];
+      // ThreadPool.append(this);
+      // semaphore.Wait();
+      // is_cpu = true;
+      // this->cpu_nodes_ = &divide_point_and_cpu_nodes[node_index];
+      // ThreadPool.append(this);
 
-      
-      semaphore.Wait();
-      is_cpu = true;
-      this->cpu_nodes_ = &divide_point_and_cpu_nodes[node_index];
-      
-      ThreadPool.append(this);
+      pool.pushTask((bind(&Subgraph::parallel_execute, this, gpu_partition_nodes[current_gpu_partition])),gpu_partition_nodes[current_gpu_partition]);
+      current_gpu_partition++;
+      pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
+
 
       finish.Wait();
 
