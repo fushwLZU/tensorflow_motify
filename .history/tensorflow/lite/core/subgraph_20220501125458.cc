@@ -56,8 +56,6 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 // #include "tensorflow/core/platform/threadpool.h"
 
-
-
 #ifdef TFLITE_USE_SIMPLE_MEMORY_PLANNER
 #include "tensorflow/lite/simple_planner.h"
 #else
@@ -69,9 +67,6 @@ extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 extern std::vector<std::vector<int>> gpu_partition_nodes;
 extern int total_nodes_nums;
 extern int gpu_partition_num;
-extern void SyncGpu();
-extern void tensorPtrMotify();
-extern uint64_t GetMapOutEventTime();
 
 // template <typename T>
 // class threadpool
@@ -1533,7 +1528,7 @@ TfLiteStatus Subgraph::Invoke() {
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
     
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < node.inputs->size; ++i) {
       int tensor_index = node.inputs->data[i];
       if (tensor_index == kTfLiteOptionalTensor) {
@@ -1618,36 +1613,32 @@ TfLiteStatus Subgraph::Invoke() {
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
 
-      // auto end = std::chrono::high_resolution_clock::now();
-      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-      // TFLITE_LOG(INFO) << "meeting point " << node_index << " latency: " << duration_mcs.count();
+      auto end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+      TFLITE_LOG(INFO) << "meeting point " << node_index << "latency: " << duration_mcs.count();
 
       // std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
       // std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
                                       
-      // finish = Semaphore(-1);
-      // pool.pushTask((bind(&Subgraph::parallel_execute, this, gpu_partition_nodes[current_gpu_partition])),gpu_partition_nodes[current_gpu_partition]);
-      // current_gpu_partition++;
-      // pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
-      // finish.Wait();
+      // std::thread branch2(&Subgraph::parallel_execute, this, gpu_node);
+      // branch1.join();
+      // branch2.join();
+      // semaphore = Semaphore(0);
+      finish = Semaphore(-1);
+      // is_cpu = false;  
+      // this->gpu_nodes_ = &gpu_partition_nodes[current_gpu_partition++];
+      // ThreadPool.append(this);
+      // semaphore.Wait();
+      // is_cpu = true;
+      // this->cpu_nodes_ = &divide_point_and_cpu_nodes[node_index];
+      // ThreadPool.append(this);
 
-      // auto start = std::chrono::high_resolution_clock::now();
-      parallel_execute(gpu_partition_nodes[current_gpu_partition]);
+      pool.pushTask((bind(&Subgraph::parallel_execute, this, gpu_partition_nodes[current_gpu_partition])),gpu_partition_nodes[current_gpu_partition]);
       current_gpu_partition++;
-      // auto end = std::chrono::high_resolution_clock::now();
-      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-      // TFLITE_LOG(INFO) << "gpubranch enqueue time: " << duration_mcs.count();
+      pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
 
-      parallel_execute(divide_point_and_cpu_nodes[node_index]);
-      // auto start = std::chrono::high_resolution_clock::now();
-      SyncGpu();
-      // auto end = std::chrono::high_resolution_clock::now();
-      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-      // TFLITE_LOG(INFO) << "syncgpu time: " << duration_mcs.count();
 
-      // uint64_t map_out_time = GetMapOutEventTime();
-      // TFLITE_LOG(INFO) << "map_out_time: " << map_out_time;
-      tensorPtrMotify();
+      finish.Wait();
 
       execution_plan_index += divide_point_and_cpu_nodes[node_index].size() + 1;
       // TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;

@@ -71,17 +71,9 @@ tflite::gpu::cl::CLCommandQueue* gpu_queue;
 std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> output_tensor_map_tmp;
 std::vector<int> output_idx_to_original_tmp;
 std::vector<void*> HostPtrs;
-cl_event* map_out_event;
-uint64_t GetMapOutEventTime(){
-  // tflite::gpu::cl::CLEvent map_out_event_(map_out_event);
-  // return map_out_event_.GetEventTimeNs();
-  cl_ulong start_time_ns;
-  cl_ulong end_time_ns;
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
-                          &start_time_ns, nullptr);
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                          &end_time_ns, nullptr);    
-  return end_time_ns - start_time_ns;                                            
+tflite::gpu::cl::CLEvent map_out_event;
+double GetMapOutEventTime(){
+  return map_out_event.GetEventTimeMs();
 }
 void SyncGpu(){
   gpu_queue->WaitForCompletion();
@@ -595,9 +587,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
       cl_mem buffer = output_tensor_map_[i].first.memobj;
       size_t data_size = output_tensor_map_[i].second;
       cl_int error_code;
-      cl_event map_out_evt;
-      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(queue_->queue(), buffer, CL_FALSE, CL_MAP_READ, 0, data_size, 0, NULL, &map_out_evt, &error_code);
-      map_out_event = &map_out_evt;
+      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(queue_->queue(), buffer, CL_FALSE, CL_MAP_READ, 0, data_size, 0, NULL, &(map_out_event.event()), &error_code);
       HostPtrs.push_back(hostPtr);
       // tensor->data.data = hostPtr;
       // tensor->data.raw = (char *)hostPtr;
@@ -717,7 +707,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     
     // TFLITE_LOG(INFO) << "fsw in run flag1... :" << std::endl;
 
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
     // for (const auto& input : inputs_) {
     //   RETURN_IF_ERROR(input->CopyFromExternalObject());
@@ -744,12 +734,12 @@ class InferenceRunnerImpl : public CLInferenceRunner {
       error_code0 = clEnqueueUnmapMemObject(queue_->queue(), in_buffer, hostptr, 0, NULL, NULL);
     }
 
-    // auto end = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
     // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
     // TFLITE_LOG(INFO) << "fsw map input time: " << d.count() << "ms";
-    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    // TFLITE_LOG(INFO) << "fsw map input time: " << duration_mcs.count() << "us";
+    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    TFLITE_LOG(INFO) << "fsw map input time: " << duration_mcs.count() << "us";
 
     // start = std::chrono::high_resolution_clock::now();
 
@@ -763,7 +753,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     // TFLITE_LOG(INFO) << "runwithoutbuffercopy time: " << duration_mcs2.count() << "us";
 
 
-    // start = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
 
     //device-->host
     // bool has_async_copies = false;
@@ -794,12 +784,12 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     HostPtrs = map_output_buffer();
     output_idx_to_original_tmp = output_idx_to_original_;
 
-    // end = std::chrono::high_resolution_clock::now();
+    end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double,std::ratio<1,1>> ds1 = end - start;
     // std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
     // TFLITE_LOG(INFO) << "fsw map output time: " << d1.count() << "ms";
-    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    // TFLITE_LOG(INFO) << "map output time: " << duration_mcs1.count() << "us";
+    std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+    TFLITE_LOG(INFO) << "map output time: " << duration_mcs1.count() << "us";
 
     
 #ifdef CL_DELEGATE_ALLOW_GL

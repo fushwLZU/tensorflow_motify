@@ -1639,15 +1639,18 @@ TfLiteStatus Subgraph::Invoke() {
       // TFLITE_LOG(INFO) << "gpubranch enqueue time: " << duration_mcs.count();
 
       parallel_execute(divide_point_and_cpu_nodes[node_index]);
-      // auto start = std::chrono::high_resolution_clock::now();
+      auto start = std::chrono::high_resolution_clock::now();
       SyncGpu();
-      // auto end = std::chrono::high_resolution_clock::now();
-      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-      // TFLITE_LOG(INFO) << "syncgpu time: " << duration_mcs.count();
+      auto end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+      TFLITE_LOG(INFO) << "syncgpu time: " << duration_mcs.count();
 
-      // uint64_t map_out_time = GetMapOutEventTime();
-      // TFLITE_LOG(INFO) << "map_out_time: " << map_out_time;
+      uint64_t map_out_time = GetMapOutEventTime();
+      TFLITE_LOG(INFO) << "map_out_time: " << map_out_time;
+
+
       tensorPtrMotify();
+
 
       execution_plan_index += divide_point_and_cpu_nodes[node_index].size() + 1;
       // TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;

@@ -679,8 +679,6 @@ absl::Status InferenceContext::AddToQueue(CLCommandQueue* queue) {
   int counter = 0;
   for (auto& node : nodes_) {
     // TFLITE_LOG(INFO) << node.name;
-    // auto start = std::chrono::high_resolution_clock::now();
-
     RETURN_IF_ERROR(node.cl_operation.AddToQueue(queue));
     counter++;
     if (execution_hints_.flush_periodically &&
@@ -688,10 +686,6 @@ absl::Status InferenceContext::AddToQueue(CLCommandQueue* queue) {
       TFLITE_LOG(INFO) << "execution_hints_.flush_periodically";    
       clFlush(queue->queue());
     }
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    // TFLITE_LOG(INFO) << "kernel enqueue time : " << duration_mcs.count() << "us";
-
   }
   if (execution_hints_.need_flush) {
     TFLITE_LOG(INFO) << "execution_hints_.need_flush";    

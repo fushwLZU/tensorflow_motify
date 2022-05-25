@@ -51,6 +51,7 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/delegates/gpu/api.h"
+// #include "tensorflow/lite/delegates/gpu/cl/opencl_wrapper.h"
 
 //author:fu
 bool is_input_tensor_linked = false;
@@ -71,15 +72,15 @@ tflite::gpu::cl::CLCommandQueue* gpu_queue;
 std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> output_tensor_map_tmp;
 std::vector<int> output_idx_to_original_tmp;
 std::vector<void*> HostPtrs;
-cl_event* map_out_event;
+cl_event map_out_event;
 uint64_t GetMapOutEventTime(){
   // tflite::gpu::cl::CLEvent map_out_event_(map_out_event);
-  // return map_out_event_.GetEventTimeNs();
+  // return map_out_event_.GetEventTimeMs();
   cl_ulong start_time_ns;
   cl_ulong end_time_ns;
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
+  tflite::gpu::cl::clGetEventProfilingInfo(map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
                           &start_time_ns, nullptr);
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
+  tflite::gpu::cl::clGetEventProfilingInfo(map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
                           &end_time_ns, nullptr);    
   return end_time_ns - start_time_ns;                                            
 }
@@ -595,9 +596,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
       cl_mem buffer = output_tensor_map_[i].first.memobj;
       size_t data_size = output_tensor_map_[i].second;
       cl_int error_code;
-      cl_event map_out_evt;
-      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(queue_->queue(), buffer, CL_FALSE, CL_MAP_READ, 0, data_size, 0, NULL, &map_out_evt, &error_code);
-      map_out_event = &map_out_evt;
+      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(queue_->queue(), buffer, CL_FALSE, CL_MAP_READ, 0, data_size, 0, NULL, &map_out_event, &error_code);
       HostPtrs.push_back(hostPtr);
       // tensor->data.data = hostPtr;
       // tensor->data.raw = (char *)hostPtr;

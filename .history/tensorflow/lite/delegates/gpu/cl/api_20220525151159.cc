@@ -72,7 +72,7 @@ std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> output_tensor_map_tmp;
 std::vector<int> output_idx_to_original_tmp;
 std::vector<void*> HostPtrs;
 cl_event* map_out_event;
-uint64_t GetMapOutEventTime(){
+double GetMapOutEventTime(){
   // tflite::gpu::cl::CLEvent map_out_event_(map_out_event);
   // return map_out_event_.GetEventTimeNs();
   cl_ulong start_time_ns;
@@ -80,8 +80,9 @@ uint64_t GetMapOutEventTime(){
   tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
                           &start_time_ns, nullptr);
   tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                          &end_time_ns, nullptr);    
-  return end_time_ns - start_time_ns;                                            
+                          &end_time_ns, nullptr);  
+  uint64_t time_ns =  end_time_ns - start_time_ns;
+  return static_cast<double>(time_ns) * 1e-6;                                       
 }
 void SyncGpu(){
   gpu_queue->WaitForCompletion();

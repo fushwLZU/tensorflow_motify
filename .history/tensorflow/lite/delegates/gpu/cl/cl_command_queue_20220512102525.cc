@@ -92,16 +92,16 @@ absl::Status CLCommandQueue::Dispatch(const CLKernel& kernel,
                                       const int3& work_group_size) {
   
   //author:fu
-  // auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
 
   return Dispatch(kernel, work_groups_count, work_group_size, nullptr);
 
-  // auto end = std::chrono::high_resolution_clock::now();
+  auto end = std::chrono::high_resolution_clock::now();
   // std::chrono::duration<double,std::ratio<1,1>> ds = end - start;
   // std::chrono::milliseconds d = std::chrono::duration_cast< std::chrono::milliseconds >( ds );
   // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"fsw run kernel time = %f ms, ",d.count());
-  // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-  // TFLITE_LOG_PROD(TFLITE_LOG_INFO,"kernel enqueue time = %f us, ",duration_mcs.count());
+  std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+  TFLITE_LOG_PROD(TFLITE_LOG_INFO,"kernel enqueue time = %f us, ",duration_mcs.count());
 
 }
 

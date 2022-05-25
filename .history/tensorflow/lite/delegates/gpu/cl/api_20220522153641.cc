@@ -70,29 +70,21 @@ bool is_tensor_ptr_motified = false;
 tflite::gpu::cl::CLCommandQueue* gpu_queue;
 std::vector<std::pair<tflite::gpu::OpenClBuffer,int>> output_tensor_map_tmp;
 std::vector<int> output_idx_to_original_tmp;
-std::vector<void*> HostPtrs;
-cl_event* map_out_event;
-uint64_t GetMapOutEventTime(){
-  // tflite::gpu::cl::CLEvent map_out_event_(map_out_event);
-  // return map_out_event_.GetEventTimeNs();
-  cl_ulong start_time_ns;
-  cl_ulong end_time_ns;
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
-                          &start_time_ns, nullptr);
-  tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                          &end_time_ns, nullptr);    
-  return end_time_ns - start_time_ns;                                            
-}
 void SyncGpu(){
   gpu_queue->WaitForCompletion();
 }
-
-void tensorPtrMotify(){
-  for(int i = 0; i < HostPtrs.size(); ++i){
-    TfLiteTensor* tensor = &(original_tensor[output_idx_to_original_tmp[i]]);
-    tensor->data.data = HostPtrs[i];
-    tensor->data.raw = (char *)HostPtrs[i];
-  }
+void datamap(){
+  for(int i = 0; i < output_tensor_map_tmp.size(); ++i){
+      TfLiteTensor* tensor = &(original_tensor[output_idx_to_original_tmp[i]]);
+      cl_mem buffer = output_tensor_map_tmp[i].first.memobj;
+      size_t data_size = output_tensor_map_tmp[i].second;
+      cl_int error_code;
+      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(gpu_queue->queue(), buffer, CL_TRUE, CL_MAP_READ, 0, data_size, 0, NULL, NULL, &error_code);
+      tensor->data.data = hostPtr;
+      tensor->data.raw = (char *)hostPtr;
+      // memcpy(tensor->data.data, hostPtr, data_size);
+      // error_code = clEnqueueUnmapMemObject(queue_->queue(), buffer, hostPtr, 0, NULL, NULL);
+    }
 }
 void zero_copy(){
   // host-->device
@@ -588,27 +580,6 @@ class InferenceRunnerImpl : public CLInferenceRunner {
   std::vector<int> input_idx_to_original_;
   std::vector<int> output_idx_to_original_;
 
-  std::vector<void*> map_output_buffer(){
-    std::vector<void*> HostPtrs;
-    for(int i = 0; i < output_tensor_map_.size(); ++i){
-      // TfLiteTensor* tensor = &(original_tensor[output_idx_to_original_tmp[i]]);
-      cl_mem buffer = output_tensor_map_[i].first.memobj;
-      size_t data_size = output_tensor_map_[i].second;
-      cl_int error_code;
-      cl_event map_out_evt;
-      void* hostPtr = tflite::gpu::cl::clEnqueueMapBuffer(queue_->queue(), buffer, CL_FALSE, CL_MAP_READ, 0, data_size, 0, NULL, &map_out_evt, &error_code);
-      map_out_event = &map_out_evt;
-      HostPtrs.push_back(hostPtr);
-      // tensor->data.data = hostPtr;
-      // tensor->data.raw = (char *)hostPtr;
-      // memcpy(tensor->data.data, hostPtr, data_size);
-      // error_code = clEnqueueUnmapMemObject(queue_->queue(), buffer, hostPtr, 0, NULL, NULL);
-    }
-    gpu_queue = queue_;
-    clFlush(gpu_queue->queue());
-    return HostPtrs;
-  }
-
   InferenceRunnerImpl(Environment* environment,
                       std::unique_ptr<InferenceContext> context
 #ifdef CL_DELEGATE_ALLOW_GL
@@ -717,7 +688,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     
     // TFLITE_LOG(INFO) << "fsw in run flag1... :" << std::endl;
 
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
     // for (const auto& input : inputs_) {
     //   RETURN_IF_ERROR(input->CopyFromExternalObject());
@@ -789,9 +760,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     //   // memcpy(tensor->data.data, hostPtr, data_size);
     //   // error_code = clEnqueueUnmapMemObject(queue_->queue(), buffer, hostPtr, 0, NULL, NULL);
     // }
-    
-    //enqueue output buffer map
-    HostPtrs = map_output_buffer();
+    output_tensor_map_tmp = output_tensor_map_;
     output_idx_to_original_tmp = output_idx_to_original_;
 
     // end = std::chrono::high_resolution_clock::now();
@@ -799,7 +768,7 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     // std::chrono::milliseconds d1 = std::chrono::duration_cast< std::chrono::milliseconds >( ds1 );
     // TFLITE_LOG(INFO) << "fsw map output time: " << d1.count() << "ms";
     // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs1=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
-    // TFLITE_LOG(INFO) << "map output time: " << duration_mcs1.count() << "us";
+    // TFLITE_LOG(INFO) << "fsw map output time: " << duration_mcs1.count() << "us";
 
     
 #ifdef CL_DELEGATE_ALLOW_GL
@@ -819,8 +788,8 @@ class InferenceRunnerImpl : public CLInferenceRunner {
     RETURN_IF_ERROR(context_->AddToQueue(queue_));
     // clFlush(queue_->queue());
 
-    // gpu_queue = queue_;
-    // clFlush(gpu_queue->queue());
+    gpu_queue = queue_;
+    clFlush(gpu_queue->queue());
     
     //author:fu
     // clFinish(queue_->queue());

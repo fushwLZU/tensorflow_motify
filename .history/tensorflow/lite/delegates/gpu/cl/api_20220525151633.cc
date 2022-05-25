@@ -81,7 +81,7 @@ uint64_t GetMapOutEventTime(){
                           &start_time_ns, nullptr);
   tflite::gpu::cl::clGetEventProfilingInfo(*map_out_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
                           &end_time_ns, nullptr);    
-  return end_time_ns - start_time_ns;                                            
+  return end_time_ns;                                            
 }
 void SyncGpu(){
   gpu_queue->WaitForCompletion();

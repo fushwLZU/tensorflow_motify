@@ -24,7 +24,7 @@ limitations under the License.
 #include "tensorflow/lite/delegates/gpu/cl/default/qcom_wrapper.h"
 #include "tensorflow/lite/delegates/gpu/common/status.h"
 
-// #include "C:/Users/25486/_bazel_25486/v4xxzvgh/external/opencl_headers/CL/cl.h"
+// #include "CL/cl.h"
 // #include "CL/cl_egl.h"
 // #include "CL/cl_ext.h"
 // #include "CL/cl_gl.h"
