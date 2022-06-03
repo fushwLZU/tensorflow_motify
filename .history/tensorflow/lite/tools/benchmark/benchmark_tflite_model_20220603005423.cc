@@ -685,10 +685,10 @@ void BenchmarkTfLiteModel::partitionModel(){
   // TFLITE_LOG(INFO) << "f cpu_branchs: ";
   
   for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
+    for(auto x:cpu_branchs[i]){
+      TFLITE_LOG(INFO) << x;  
+    }
+    TFLITE_LOG(INFO) << std::endl;
     int mp = divide_point[i];
     divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
   }

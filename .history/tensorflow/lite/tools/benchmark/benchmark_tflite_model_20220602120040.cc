@@ -46,11 +46,6 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 #include "tensorflow/lite/tools/utils.h"
 
-std::vector<int> divide_point;
-std::vector<std::vector<int>> cpu_branchs;
-std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
-std::vector<int> gpu_supported_nodes;
-
 void RegisterSelectedOps(::tflite::MutableOpResolver* resolver);
 
 // Version with Weak linker attribute doing nothing: if someone links this
@@ -637,11 +632,22 @@ std::string ToString(const std::vector<std::string>& str_vector) {
   // stream << "]";
   return stream.str();
 }
+void praseNodeName(std::string& s){
+  if(s.find(';') != std::string::npos){
+    s = s.substr(0, s.find_first_of(';'));
+  }
+  //meeting point
+  if(s.find("mp") != std::string::npos){
 
+  }
+  else if(s.find("cpu") != std::string::npos){
+
+  }
+  else if(s.find("gpu") != std::string::npos){
+    
+  }
+}
 void BenchmarkTfLiteModel::partitionModel(){
-  bool find_root = false;
-  bool is_next_partition = false;
-  std::vector<int> cpu_branch;
   for (int i = 0; i < interpreter_->execution_plan().size(); ++i) {
     int node_id = interpreter_->execution_plan()[i];
     const TfLiteNode& node =
@@ -651,49 +657,7 @@ void BenchmarkTfLiteModel::partitionModel(){
     auto node_name = ToString(op_names);
     // TFLITE_LOG(INFO) << node_name;
 
-    //parse node name
-    if(node_name.find(';') != std::string::npos){
-      node_name = node_name.substr(0, node_name.find_first_of(';'));
-    }
-    if(!find_root && node_name.find("stem") != std::string::npos){
-      divide_point.push_back(node_id);
-      // TFLITE_LOG(INFO) << "root idx = " << node_id;
-      find_root = true;
-    }
-    else if(node_name.find("cpu") != std::string::npos){
-      if(is_next_partition){
-        cpu_branchs.push_back(cpu_branch);
-        cpu_branch.clear();
-        is_next_partition = false;
-      }
-      cpu_branch.push_back(node_id);
-    }
-    else if(node_name.find("gpu") != std::string::npos){
-      gpu_supported_nodes.push_back(node_id);
-    }
-    //meeting point
-    else if(node_name.find("mp") != std::string::npos){
-      divide_point.push_back(node_id);
-      is_next_partition = true;
-    }
   }
-  cpu_branchs.push_back(cpu_branch);
-  // TFLITE_LOG(INFO) << "divide point: ";
-  // for(auto& x : divide_point){
-  //   TFLITE_LOG(INFO) << x;
-  // }
-  // TFLITE_LOG(INFO) << "f cpu_branchs: ";
-  
-  for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
-    int mp = divide_point[i];
-    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
-  }
-  // TFLITE_LOG(INFO) << "partition model over...";
-
 }
 TfLiteStatus BenchmarkTfLiteModel::Init() {
   TF_LITE_ENSURE_STATUS(LoadModel());

@@ -46,11 +46,6 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 #include "tensorflow/lite/tools/utils.h"
 
-std::vector<int> divide_point;
-std::vector<std::vector<int>> cpu_branchs;
-std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
-std::vector<int> gpu_supported_nodes;
-
 void RegisterSelectedOps(::tflite::MutableOpResolver* resolver);
 
 // Version with Weak linker attribute doing nothing: if someone links this
@@ -605,101 +600,9 @@ TfLiteStatus BenchmarkTfLiteModel::InitInterpreter() {
   return kTfLiteOk;
 }
 
-std::string GetTensorName(tflite::Interpreter* interpreter,
-                          int tensor_index) {
-  const auto tensor = interpreter->tensor(tensor_index);
-  if (tensor == nullptr || tensor->name == nullptr) {
-    return "Unknown";
-  }
-  return tensor->name;
-}
-std::vector<std::string> GetTensorNames(tflite::Interpreter* interpreter,
-                                        TfLiteIntArray* tensor_indices) {
-  std::vector<std::string> tensors;
-  tensors.reserve(tensor_indices->size);
-  for (int i = 0; i < tensor_indices->size; i++) {
-    tensors.push_back(GetTensorName(interpreter, tensor_indices->data[i]));
-  }
-  return tensors;
-}
-std::string ToString(const std::vector<std::string>& str_vector) {
-  std::stringstream stream;
-  // stream << "[";
-  bool first = true;
-  for (const auto& s : str_vector) {
-    if (!first) {
-      stream << ", ";
-    } else {
-      first = false;
-    }
-    stream << s;
-  }
-  // stream << "]";
-  return stream.str();
-}
-
-void BenchmarkTfLiteModel::partitionModel(){
-  bool find_root = false;
-  bool is_next_partition = false;
-  std::vector<int> cpu_branch;
-  for (int i = 0; i < interpreter_->execution_plan().size(); ++i) {
-    int node_id = interpreter_->execution_plan()[i];
-    const TfLiteNode& node =
-        interpreter_->node_and_registration(node_id)->first;
-    auto outputs = node.outputs;
-    std::vector<std::string> op_names = GetTensorNames(interpreter_.get(), outputs);
-    auto node_name = ToString(op_names);
-    // TFLITE_LOG(INFO) << node_name;
-
-    //parse node name
-    if(node_name.find(';') != std::string::npos){
-      node_name = node_name.substr(0, node_name.find_first_of(';'));
-    }
-    if(!find_root && node_name.find("stem") != std::string::npos){
-      divide_point.push_back(node_id);
-      // TFLITE_LOG(INFO) << "root idx = " << node_id;
-      find_root = true;
-    }
-    else if(node_name.find("cpu") != std::string::npos){
-      if(is_next_partition){
-        cpu_branchs.push_back(cpu_branch);
-        cpu_branch.clear();
-        is_next_partition = false;
-      }
-      cpu_branch.push_back(node_id);
-    }
-    else if(node_name.find("gpu") != std::string::npos){
-      gpu_supported_nodes.push_back(node_id);
-    }
-    //meeting point
-    else if(node_name.find("mp") != std::string::npos){
-      divide_point.push_back(node_id);
-      is_next_partition = true;
-    }
-  }
-  cpu_branchs.push_back(cpu_branch);
-  // TFLITE_LOG(INFO) << "divide point: ";
-  // for(auto& x : divide_point){
-  //   TFLITE_LOG(INFO) << x;
-  // }
-  // TFLITE_LOG(INFO) << "f cpu_branchs: ";
-  
-  for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
-    int mp = divide_point[i];
-    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
-  }
-  // TFLITE_LOG(INFO) << "partition model over...";
-
-}
 TfLiteStatus BenchmarkTfLiteModel::Init() {
   TF_LITE_ENSURE_STATUS(LoadModel());
   TF_LITE_ENSURE_STATUS(InitInterpreter());
-
-  partitionModel();
 
   // Install profilers if necessary right after interpreter is created so that
   // any memory allocations inside the TFLite runtime could be recorded if the

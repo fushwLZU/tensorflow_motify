@@ -657,7 +657,7 @@ void BenchmarkTfLiteModel::partitionModel(){
     }
     if(!find_root && node_name.find("stem") != std::string::npos){
       divide_point.push_back(node_id);
-      // TFLITE_LOG(INFO) << "root idx = " << node_id;
+      TFLITE_LOG(INFO) << "root idx = " << node_id;
       find_root = true;
     }
     else if(node_name.find("cpu") != std::string::npos){
@@ -677,22 +677,15 @@ void BenchmarkTfLiteModel::partitionModel(){
       is_next_partition = true;
     }
   }
-  cpu_branchs.push_back(cpu_branch);
-  // TFLITE_LOG(INFO) << "divide point: ";
-  // for(auto& x : divide_point){
-  //   TFLITE_LOG(INFO) << x;
-  // }
-  // TFLITE_LOG(INFO) << "f cpu_branchs: ";
-  
   for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
     int mp = divide_point[i];
     divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
   }
-  // TFLITE_LOG(INFO) << "partition model over...";
+  TFLITE_LOG(INFO) << "partition model over...";
+  TFLITE_LOG(INFO) << "divide point: ";
+  for(auto& x : divide_point){
+    TFLITE_LOG(INFO) << x;
+  }
 
 }
 TfLiteStatus BenchmarkTfLiteModel::Init() {

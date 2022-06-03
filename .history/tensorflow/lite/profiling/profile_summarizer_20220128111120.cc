@@ -148,7 +148,6 @@ void ProfileSummarizer::ProcessProfiles(
       }
 
       const auto node_name = ToString(op_details.outputs);
-      
       // Append node index to node name because 'stats_calculator' can not
       // distinguish two nodes w/ the same 'node_name'.
       const auto node_name_in_stats =

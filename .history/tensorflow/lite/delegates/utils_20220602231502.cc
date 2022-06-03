@@ -19,12 +19,23 @@ limitations under the License.
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <fstream>
+#include <unordered_map>
+#include <sstream>
 
 #include "tensorflow/lite/builtin_ops.h"
 #include "tensorflow/lite/context_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 
 #include "tensorflow/lite/tools/logging.h"
+
+//author:fu
+extern std::string partition_file_name;
+extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
+extern std::vector<int> gpu_supported_nodes;
+std::vector<std::vector<int>> gpu_partition_nodes;
+int total_nodes_nums;
+int gpu_partition_num;
 
 namespace tflite {
 namespace delegates {
@@ -34,6 +45,7 @@ TfLiteStatus CreateNewTensorWithDifferentType(TfLiteContext* context,
                                               TfLiteType new_type,
                                               TfLiteTensor** new_tensor,
                                               int* new_tensor_index) {
+  // TFLITE_LOG(INFO) << "fsw in CreateNewTensorWithDifferentType...";
   TF_LITE_ENSURE_STATUS(context->AddTensors(context, 1, new_tensor_index));
   const TfLiteTensor& original_tensor = context->tensors[original_tensor_index];
   *new_tensor = &context->tensors[*new_tensor_index];
@@ -128,6 +140,11 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   // which is dangerous if a delegate's IsNodeSupportedFn uses it anywhere.
   // So we store a copy to ensure validity.
   num_total_nodes_ = execution_plan->size;
+  
+  // TFLITE_LOG(INFO) << "num_total_nodes_ = " << num_total_nodes_;
+  //author:fu
+  total_nodes_nums = num_total_nodes_;
+
   original_execution_plan_ = TfLiteIntArrayCreate(execution_plan->size);
   std::memcpy(original_execution_plan_->data, execution_plan->data,
               num_total_nodes_ * sizeof(int32_t));
@@ -148,6 +165,7 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //     supported_nodes_->size = 0;
   //     return status;
   //   }
+  //   TFLITE_LOG(INFO) << "node_id: " << node_id << "  node_name: " ;
 
   //   std::string unsupported_details;
   //   if (IsNodeSupported(context_, node, registration, node_id,
@@ -167,9 +185,36 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   TFLITE_LOG(INFO) << node_id << " "; 
   // }
   // TFLITE_LOG(INFO) << std::endl << std::endl;
-  std::vector<int> node_ids = {6,7,8};
-  for(int i = 0; i < node_ids.size(); ++i){
-    supported_nodes_->data[supported_nodes_->size++] = node_ids[i];
+  // std::vector<int> node_ids;
+  // std::ifstream infile;
+  // infile.open(partition_file_name);
+  // std::string tmp;
+  // getline(infile, tmp);
+  // std::stringstream ss(tmp);
+  // std::string token;
+  // while (ss >> token){
+  //   node_ids.push_back(std::stod(token));
+  // }
+  // while(getline(infile,tmp)){
+  //   gpu_partition_num++;
+  //   std::stringstream ss(tmp);
+  //   std::string divide_point;
+  //   std::string node_idx;
+  //   std::vector<int> cpu_nodes;
+  //   ss >> divide_point;
+  //   while(ss >> node_idx){
+  //     cpu_nodes.push_back(std::stod(node_idx));
+  //   }
+  //   divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
+  // }
+  gpu_partition_num = divide_point_and_cpu_nodes.size();
+  //new index for gpu nodes
+  for(int i = 0; i < gpu_partition_num; ++i){
+    gpu_partition_nodes.push_back({total_nodes_nums});
+    total_nodes_nums++;
+  }
+  for(int i = 0; i < gpu_supported_nodes.size(); ++i){
+    supported_nodes_->data[supported_nodes_->size++] = gpu_supported_nodes[i];
   }
 
   num_supported_nodes_ = supported_nodes_->size;

@@ -79,8 +79,6 @@ class BenchmarkTfLiteModel : public BenchmarkModel {
   // Allow subclass to initialize a customized tflite interpereter.
   virtual TfLiteStatus InitInterpreter();
 
-
-  void partitionModel();
   // Create a BenchmarkListener that's specifically for TFLite profiling if
   // necessary.
   virtual std::unique_ptr<BenchmarkListener> MayCreateProfilingListener() const;

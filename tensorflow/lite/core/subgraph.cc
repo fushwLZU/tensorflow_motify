@@ -1391,7 +1391,6 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
-    // TFLITE_LOG(INFO) << "fsw in parallel_execute";
     const char* op_name = nullptr;
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
@@ -1533,6 +1532,7 @@ TfLiteStatus Subgraph::Invoke() {
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
     
+    // TFLITE_LOG(INFO) << "current node_name: " << registration.custom_name;
     // auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < node.inputs->size; ++i) {
       int tensor_index = node.inputs->data[i];

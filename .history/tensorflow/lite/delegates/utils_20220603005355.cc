@@ -141,7 +141,7 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   // So we store a copy to ensure validity.
   num_total_nodes_ = execution_plan->size;
   
-  // TFLITE_LOG(INFO) << "num_total_nodes_ = " << num_total_nodes_;
+  TFLITE_LOG(INFO) << "num_total_nodes_ = " << num_total_nodes_;
   //author:fu
   total_nodes_nums = num_total_nodes_;
 

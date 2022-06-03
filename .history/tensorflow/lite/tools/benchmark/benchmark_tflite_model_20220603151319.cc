@@ -699,7 +699,7 @@ TfLiteStatus BenchmarkTfLiteModel::Init() {
   TF_LITE_ENSURE_STATUS(LoadModel());
   TF_LITE_ENSURE_STATUS(InitInterpreter());
 
-  partitionModel();
+  // partitionModel();
 
   // Install profilers if necessary right after interpreter is created so that
   // any memory allocations inside the TFLite runtime could be recorded if the
