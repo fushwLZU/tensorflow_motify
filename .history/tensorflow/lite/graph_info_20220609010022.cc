@@ -22,8 +22,6 @@ limitations under the License.
 
 #include "tensorflow/lite/tools/logging.h"
 
-extern int root_idx;
-
 namespace tflite {
 namespace {
 
@@ -69,8 +67,12 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
       const auto& node = info_->node(i);
       // Set default value.
       control_deps_[i] = -1;
+      TFLITE_LOG(INFO) << "node " << i;
+
       if (node.might_have_side_effect) {
+        TFLITE_LOG(INFO) << "node " << i << " might_have_side_effect";
         if (last_op_with_side_effect != -1) {
+          TFLITE_LOG(INFO) << "last_op_with_side_effect != -1";
           control_deps_[i] = last_op_with_side_effect;
         }
         last_op_with_side_effect = i;
@@ -214,10 +216,6 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
            node_index++) {
         if (UpdateNode(node_index)) {
           did_something = true;
-          if(node_index == root_idx){
-            did_something = false;
-            break;
-          }
         }
       }
       if (!did_something) return;

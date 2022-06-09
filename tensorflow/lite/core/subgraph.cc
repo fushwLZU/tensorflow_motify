@@ -72,6 +72,7 @@ extern int gpu_partition_num;
 extern void SyncGpu();
 extern void tensorPtrMotify();
 extern uint64_t GetMapOutEventTime();
+bool is_first_parallel = true;
 
 // template <typename T>
 // class threadpool
@@ -1476,7 +1477,7 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     // // Release dynamic tensor memory if configured by the user.
     // MaybeReleaseDynamicInputs(node, node_index);
   }
-  finish.Signal();
+  // finish.Signal();
   return kTfLiteOk;
 
 }
@@ -1617,6 +1618,11 @@ TfLiteStatus Subgraph::Invoke() {
     MaybeReleaseDynamicInputs(node, node_index);
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
+      if(is_first_parallel){
+        SyncGpu();
+        tensorPtrMotify();
+        is_first_parallel = false;
+      }
 
       // auto end = std::chrono::high_resolution_clock::now();
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  

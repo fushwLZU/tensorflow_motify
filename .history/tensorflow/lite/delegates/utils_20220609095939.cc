@@ -225,13 +225,13 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   TFLITE_LOG(INFO) << x;
   // }
   // TFLITE_LOG(INFO) << "cpu branchs:";
-  // for(auto& mp : divide_point_and_cpu_nodes){
-  //   TFLITE_LOG(INFO) << "meeting point: " << mp.first;
-  //   TFLITE_LOG(INFO) << "cpu branch:";
-  //   for(auto x : mp.second){
-  //     TFLITE_LOG(INFO) << x;
-  //   }
-  // }
+  for(auto& mp : divide_point_and_cpu_nodes){
+    TFLITE_LOG(INFO) << "meeting point: " << mp.first;
+    TFLITE_LOG(INFO) << "cpu branch:";
+    for(auto x : mp.second){
+      TFLITE_LOG(INFO) << x;
+    }
+  }
   //new index for gpu nodes
   for(int i = 0; i < gpu_partition_num; ++i){
     gpu_partition_nodes.push_back({total_nodes_nums + 1});

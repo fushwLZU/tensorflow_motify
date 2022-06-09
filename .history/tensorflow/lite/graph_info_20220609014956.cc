@@ -22,8 +22,6 @@ limitations under the License.
 
 #include "tensorflow/lite/tools/logging.h"
 
-extern int root_idx;
-
 namespace tflite {
 namespace {
 
@@ -214,7 +212,7 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
            node_index++) {
         if (UpdateNode(node_index)) {
           did_something = true;
-          if(node_index == root_idx){
+          if(node_index==0){
             did_something = false;
             break;
           }

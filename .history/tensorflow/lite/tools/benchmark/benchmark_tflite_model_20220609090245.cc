@@ -657,7 +657,7 @@ void BenchmarkTfLiteModel::partitionModel(){
       node_name = node_name.substr(0, node_name.find_first_of(';'));
     }
     if(!find_root && node_name.find("stem_mp_gpu") != std::string::npos){
-      divide_point.push_back(node_id);
+      // divide_point.push_back(node_id);
       gpu_supported_nodes.push_back(node_id);
       root_idx = node_id;
       find_root = true;
@@ -686,15 +686,15 @@ void BenchmarkTfLiteModel::partitionModel(){
   // }
   // TFLITE_LOG(INFO) << "f cpu_branchs: ";
   
-  
-  // for(int i = 0; i < cpu_branchs.size(); ++i){
-  //   // for(auto x:cpu_branchs[i]){
-  //   //   TFLITE_LOG(INFO) << x;  
-  //   // }
-  //   // TFLITE_LOG(INFO) << std::endl;
-  //   int mp = divide_point[i];
-  //   divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
-  // }
+  divide_point[0] = interpreter_->execution_plan().size();
+  for(int i = 0; i < cpu_branchs.size(); ++i){
+    // for(auto x:cpu_branchs[i]){
+    //   TFLITE_LOG(INFO) << x;  
+    // }
+    // TFLITE_LOG(INFO) << std::endl;
+    int mp = divide_point[i];
+    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
+  }
   // TFLITE_LOG(INFO) << "partition model over...";
 
 }

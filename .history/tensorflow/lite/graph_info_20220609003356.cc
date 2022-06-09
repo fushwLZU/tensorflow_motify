@@ -22,8 +22,6 @@ limitations under the License.
 
 #include "tensorflow/lite/tools/logging.h"
 
-extern int root_idx;
-
 namespace tflite {
 namespace {
 
@@ -140,6 +138,9 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
   // assigned to the current epoch since the epoch's node_type doesn't match.
   bool UpdateNode(int node_index) {
     const TfLiteNode& node = info_->node(node_index);
+    if(node_index==1){
+      return false;
+    }
     NodeSubset& current_subset = node_subsets_->back();
     int current_epoch = node_subsets_->size() - 1;
     // Check if node is already done.
@@ -214,10 +215,6 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
            node_index++) {
         if (UpdateNode(node_index)) {
           did_something = true;
-          if(node_index == root_idx){
-            did_something = false;
-            break;
-          }
         }
       }
       if (!did_something) return;

@@ -31,8 +31,6 @@ limitations under the License.
 
 //author:fu
 extern std::string partition_file_name;
-extern std::vector<int> divide_point;
-extern std::vector<std::vector<int>> cpu_branchs;
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 extern std::vector<int> gpu_supported_nodes;
 std::vector<std::vector<int>> gpu_partition_nodes;
@@ -209,15 +207,6 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   }
   //   divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
   // }
-  divide_point[0] = total_nodes_nums;
-  for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
-    int mp = divide_point[i];
-    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
-  }
   gpu_partition_num = divide_point_and_cpu_nodes.size();
   // TFLITE_LOG(INFO) << "gpu_partition_num = " << gpu_partition_num;
   // TFLITE_LOG(INFO) << "gpu supported nodes:";

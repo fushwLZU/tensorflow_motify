@@ -70,7 +70,9 @@ extern std::vector<std::vector<int>> gpu_partition_nodes;
 extern int total_nodes_nums;
 extern int gpu_partition_num;
 extern void SyncGpu();
-
+extern void tensorPtrMotify();
+extern uint64_t GetMapOutEventTime();
+bool is_first_parallel = true;
 
 // template <typename T>
 // class threadpool
@@ -1390,7 +1392,6 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
-    // TFLITE_LOG(INFO) << "fsw in parallel_execute";
     const char* op_name = nullptr;
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
@@ -1476,7 +1477,7 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     // // Release dynamic tensor memory if configured by the user.
     // MaybeReleaseDynamicInputs(node, node_index);
   }
-  finish.Signal();
+  // finish.Signal();
   return kTfLiteOk;
 
 }
@@ -1523,7 +1524,7 @@ TfLiteStatus Subgraph::Invoke() {
                                     execution_plan_index);
     }
     int node_index = execution_plan_[execution_plan_index];
-    // TFLITE_LOG(INFO) << "current node_index: " << node_index;
+    TFLITE_LOG(INFO) << "current node_index: " << node_index;
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
@@ -1532,6 +1533,7 @@ TfLiteStatus Subgraph::Invoke() {
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
     
+    // TFLITE_LOG(INFO) << "current node_name: " << registration.custom_name;
     // auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < node.inputs->size; ++i) {
       int tensor_index = node.inputs->data[i];
@@ -1616,6 +1618,11 @@ TfLiteStatus Subgraph::Invoke() {
     MaybeReleaseDynamicInputs(node, node_index);
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
+      if(is_first_parallel){
+        SyncGpu();
+        tensorPtrMotify();
+        is_first_parallel = false;
+      }
 
       // auto end = std::chrono::high_resolution_clock::now();
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
@@ -1630,10 +1637,23 @@ TfLiteStatus Subgraph::Invoke() {
       // pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
       // finish.Wait();
 
+      // auto start = std::chrono::high_resolution_clock::now();
       parallel_execute(gpu_partition_nodes[current_gpu_partition]);
-      parallel_execute(divide_point_and_cpu_nodes[node_index]);
-      SyncGpu();
+      current_gpu_partition++;
+      // auto end = std::chrono::high_resolution_clock::now();
+      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+      // TFLITE_LOG(INFO) << "gpubranch enqueue time: " << duration_mcs.count();
 
+      parallel_execute(divide_point_and_cpu_nodes[node_index]);
+      // auto start = std::chrono::high_resolution_clock::now();
+      SyncGpu();
+      // auto end = std::chrono::high_resolution_clock::now();
+      // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
+      // TFLITE_LOG(INFO) << "syncgpu time: " << duration_mcs.count();
+
+      // uint64_t map_out_time = GetMapOutEventTime();
+      // TFLITE_LOG(INFO) << "map_out_time: " << map_out_time;
+      tensorPtrMotify();
 
       execution_plan_index += divide_point_and_cpu_nodes[node_index].size() + 1;
       // TFLITE_LOG(INFO) << "parallel_execute over  " << execution_plan_index;
