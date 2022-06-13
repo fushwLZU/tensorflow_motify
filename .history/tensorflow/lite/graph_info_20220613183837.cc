@@ -56,7 +56,7 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
   // Actually partition the graph.
   void Partition() {
     // Initialize here to make Partition() re-entrant.
-    // node_subsets_->clear();
+    node_subsets_->clear();
     tensor_epochs_.clear();
     tensor_epochs_.resize(info_->num_tensors(), kEpochAlwaysReady);
     node_epochs_.clear();
@@ -266,13 +266,13 @@ TfLiteStatus PartitionGraphIntoIndependentNodeSubsets(
         .Partition();  
   }
   //author:fu
-  TFLITE_LOG(INFO) << "node_subsets info: " << std::endl;
-  for(int i = 0; i < node_subsets->size(); ++i){
-    for(int j = 0; j < (*node_subsets)[i].nodes.size(); ++j){
-      TFLITE_LOG(INFO) << (*node_subsets)[i].nodes[j] << " ";
-    }
-    TFLITE_LOG(INFO) << std::endl;
-  }
+  // TFLITE_LOG(INFO) << "node_subsets info: " << std::endl;
+  // for(int i = 0; i < node_subsets->size(); ++i){
+  //   for(int j = 0; j < (*node_subsets)[i].nodes.size(); ++j){
+  //     TFLITE_LOG(INFO) << (*node_subsets)[i].nodes[j] << " ";
+  //   }
+  //   TFLITE_LOG(INFO) << std::endl;
+  // }
   return kTfLiteOk;
 }
 

@@ -244,7 +244,7 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   // }
 
   // num_supported_nodes_ = supported_nodes_->size;
-  num_supported_nodes_ = 53;
+  num_supported_nodes = 53;
   return kTfLiteOk;
 }
 

@@ -772,9 +772,9 @@ TfLiteStatus Subgraph::PreviewDelegatePartitioning(
   if (!partition_params_array || !num_partitions) return kTfLiteError;
   *partition_params_array = nullptr;
   *num_partitions = 0;
-  if (!nodes_to_replace->size) {
-    return kTfLiteOk;
-  }
+  // if (!nodes_to_replace->size) {
+  //   return kTfLiteOk;
+  // }
 
   // Partition the execution plan into node subsets.
   InterpreterInfo info(this);
