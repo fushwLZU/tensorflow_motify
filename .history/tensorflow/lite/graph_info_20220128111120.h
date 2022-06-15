@@ -68,21 +68,7 @@ struct NodeSubset {
   enum Type {
     kTfUnexplored = 0,  // temporarily used during creation
     kTfPartition,
-    kTfNonPartition,
-    TfP2,
-    TfP3,
-    TfP4,
-    TfP5,
-    TfP6,
-    TfP7,
-    TfP8,
-    TfP9,
-    TfP10,
-    TfP11,
-    TfP12,
-    TfP13,
-    TfP14,
-    TfP15
+    kTfNonPartition
   };
   Type type = kTfUnexplored;
   // Nodes within the node sub set

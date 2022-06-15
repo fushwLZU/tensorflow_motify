@@ -66,9 +66,9 @@ limitations under the License.
 
 //author:fu
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
-extern std::vector<std::vector<int>> gpu_branchs;
-// extern int total_nodes_nums;
-// extern int gpu_partition_num;
+extern std::vector<std::vector<int>> gpu_partition_nodes;
+extern int total_nodes_nums;
+extern int gpu_partition_num;
 extern void SyncGpu();
 extern void tensorPtrMotify();
 extern uint64_t GetMapOutEventTime();
@@ -661,12 +661,7 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
       case NodeSubset::TfP7:
       case NodeSubset::TfP8: 
       case NodeSubset::TfP9: 
-      case NodeSubset::TfP10:
-      case NodeSubset::TfP11: 
-      case NodeSubset::TfP12: 
-      case NodeSubset::TfP13: 
-      case NodeSubset::TfP14: 
-      case NodeSubset::TfP15: {
+      case NodeSubset::TfP10: {
         int node_index;
 
         TfLiteDelegateParams* params =
@@ -1645,9 +1640,17 @@ TfLiteStatus Subgraph::Invoke() {
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
       // TFLITE_LOG(INFO) << "meeting point " << node_index << " latency: " << duration_mcs.count();
 
+      // std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
+      // std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
+                                      
+      // finish = Semaphore(-1);
+      // pool.pushTask((bind(&Subgraph::parallel_execute, this, gpu_partition_nodes[current_gpu_partition])),gpu_partition_nodes[current_gpu_partition]);
+      // current_gpu_partition++;
+      // pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
+      // finish.Wait();
 
       // auto start = std::chrono::high_resolution_clock::now();
-      parallel_execute(gpu_branchs[current_gpu_partition]);
+      parallel_execute(gpu_partition_nodes[current_gpu_partition]);
       current_gpu_partition++;
       // auto end = std::chrono::high_resolution_clock::now();
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  

@@ -27,7 +27,6 @@ limitations under the License.
 #include <vector>
 #include <map>
 #include <regex>
-#include <set>
 
 #include "absl/base/attributes.h"
 #include "absl/strings/numbers.h"
@@ -50,11 +49,8 @@ limitations under the License.
 #include "tensorflow/lite/tools/utils.h"
 
 std::vector<int> divide_point;
-std::set<int> divide_point_set;
 std::vector<std::vector<int>> gpu_branchs;
-std::set<int> gpu_branchs_set;
 std::vector<std::vector<int>> cpu_branchs;
-std::set<int> cpu_branchs_set;
 std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 std::vector<int> gpu_supported_nodes;
 // int root_idx; 
@@ -63,7 +59,7 @@ enum Type {
   kTfUnexplored = 0,  // temporarily used during creation
   kTfPartition,
   kTfNonPartition,
-  TfP2, //3
+  TfP2,
   TfP3,
   TfP4,
   TfP5,
@@ -71,12 +67,7 @@ enum Type {
   TfP7,
   TfP8,
   TfP9,
-  TfP10,
-  TfP11,
-  TfP12,
-  TfP13,
-  TfP14,
-  TfP15
+  TfP10
 };
 std::unordered_map<int,Type> PartitionIdxToType = {
   {1,kTfPartition},
@@ -89,11 +80,6 @@ std::unordered_map<int,Type> PartitionIdxToType = {
   {8,TfP8},
   {9,TfP9},
   {10,TfP10},
-  {11,TfP11},
-  {12,TfP12},
-  {13,TfP13},
-  {14,TfP14},
-  {15,TfP15}
 };
 std::unordered_map<int,Type> NodeIdxToPartitionIdx;
 
@@ -685,14 +671,9 @@ std::string ToString(const std::vector<std::string>& str_vector) {
 }
 
 void BenchmarkTfLiteModel::partitionModel(){
-  std::regex reg_mp_gpu("s\\w_mp_mb(\\d+)_gpu");
-  std::regex reg_gpu("s\\d+_mb(\\d+)_gpu");
-  std::regex reg_cpu("s\\d+_mb(\\d+)_cpu");
-  std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
-  std::smatch result;
-  int partitionIdx;
+  bool find_root = false;
+  bool is_next_partition = false;
   std::vector<int> cpu_branch;
-  TFLITE_LOG(INFO) <<"interpreter_->execution_plan().size() = "<< interpreter_->execution_plan().size();
   for (int i = 0; i < interpreter_->execution_plan().size(); ++i) {
     int node_id = interpreter_->execution_plan()[i];
     const TfLiteNode& node =
@@ -706,50 +687,136 @@ void BenchmarkTfLiteModel::partitionModel(){
     if(node_name.find(';') != std::string::npos){
       node_name = node_name.substr(0, node_name.find_first_of(';'));
     }
-    
+    std::regex reg_mp_gpu("s(\\d+)_mp_gpu");
+    std::regex reg_gpu();
+    std::smatch result;
     if(std::regex_search(node_name, result ,reg_mp_gpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
-      if(divide_point_set.find(partitionIdx-1) == divide_point_set.end()){
-        divide_point.push_back(partitionIdx-1); 
-        divide_point_set.insert(partitionIdx-1);
-      }
-      gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
+      int partitionIdx = stoi(result[1].str());
+      divide_point.push_back(partitionIdx);
+
     }
-    else if(std::regex_search(node_name, result ,reg_gpu_cpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
+
+
+
+    if(!find_root && node_name.find("stem_mp_gpu") != std::string::npos){
+      divide_point.push_back(node_id);
       gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
-      cpu_branch.push_back(partitionIdx-1+interpreter_->execution_plan().size());
-      // TFLITE_LOG(INFO) <<"cpu_branch.back() = "<< cpu_branch.back();
+      // root_idx = node_id;
+      find_root = true;
     }
-    else if(std::regex_search(node_name, result ,reg_gpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
-      if(gpu_branchs_set.find(partitionIdx-1) == gpu_branchs_set.end()){
-        gpu_branchs.push_back({partitionIdx-1}); 
-        gpu_branchs_set.insert(partitionIdx-1);
-      }
-      gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
-    }
-    else if(std::regex_search(node_name, result ,reg_cpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
-      if(cpu_branchs_set.find(partitionIdx) == cpu_branchs_set.end()){
-        cpu_branchs_set.insert(partitionIdx);
-        if(!cpu_branch.empty()){
-          cpu_branchs.push_back(cpu_branch);
-          cpu_branch.clear();
-        }
+    else if(node_name.find("cpu") != std::string::npos){
+      if(is_next_partition){
+        cpu_branchs.push_back(cpu_branch);
+        cpu_branch.clear();
+        is_next_partition = false;
       }
       cpu_branch.push_back(node_id);
+    }
+    else if(node_name.find("gpu") != std::string::npos){
+      gpu_supported_nodes.push_back(node_id);
+    }
+    //meeting point
+    else if(node_name.find("mp") != std::string::npos){
+      divide_point.push_back(node_id);
+      is_next_partition = true;
     }
   }
   cpu_branchs.push_back(cpu_branch);
 
-  // TFLITE_LOG(INFO) << "NodeIdxToPartitionIdx info:" ;
-  // for(auto& x : NodeIdxToPartitionIdx){
-  //   TFLITE_LOG(INFO) << x.first << "  " << x.second ;
-  // } 
+
+  // TFLITE_LOG(INFO) << "divide point: ";
+  // for(auto& x : divide_point){
+  //   TFLITE_LOG(INFO) << x;
+  // }
+  // TFLITE_LOG(INFO) << "f cpu_branchs: ";
+  
+  for(int i = 0; i < cpu_branchs.size(); ++i){
+    // for(auto x:cpu_branchs[i]){
+    //   TFLITE_LOG(INFO) << x;  
+    // }
+    // TFLITE_LOG(INFO) << std::endl;
+    int mp = divide_point[i];
+    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
+  }
+  // TFLITE_LOG(INFO) << "partition model over...";
+
+  //gpu_supported_nodes
+  gpu_supported_nodes = {0,1,2,3,4,5,6,7,8,9,10,11,12,19,20,21,22,23,24,25,26,27,28,29,36,37,38,39,40,54,41,42,43,44,45,46,47,48,49,50,51,52,53,69,70,71,72,73,74,75,76,77,78,79};
+  // GpuNodeSubsetsIdx
+  GpuNodeSubsetsIdx[1] = {0,1,2,3,4,5,6,12};
+  GpuNodeSubsetsIdx[2] = {7,8,9,10,11};
+  GpuNodeSubsetsIdx[3] = {19,20,21,22,23,29};
+  GpuNodeSubsetsIdx[4] = {24,25,26,27,28};
+  GpuNodeSubsetsIdx[5] = {36,37,38,39,40,54};
+  GpuNodeSubsetsIdx[6] = {41,42,43,44,45,46,47,48,49,50,51,52,53};
+  GpuNodeSubsetsIdx[7] = {69,70,71,72,73,79};
+  GpuNodeSubsetsIdx[8] = {74,75,76,77,78};
+  //NodeIdxToPartitionIdx
+  NodeIdxToPartitionIdx[0] = kTfPartition;
+  NodeIdxToPartitionIdx[1] = kTfPartition;
+  NodeIdxToPartitionIdx[2] = kTfPartition;
+  NodeIdxToPartitionIdx[3] = kTfPartition;
+  NodeIdxToPartitionIdx[4] = kTfPartition;
+  NodeIdxToPartitionIdx[5] = kTfPartition;
+  NodeIdxToPartitionIdx[6] = kTfPartition;
+  NodeIdxToPartitionIdx[12] = kTfPartition;
+  NodeIdxToPartitionIdx[7] = TfP2;
+  NodeIdxToPartitionIdx[8] = TfP2;
+  NodeIdxToPartitionIdx[9] = TfP2;
+  NodeIdxToPartitionIdx[10] = TfP2;
+  NodeIdxToPartitionIdx[11] = TfP2;
+  NodeIdxToPartitionIdx[19] = TfP3;
+  NodeIdxToPartitionIdx[20] = TfP3;
+  NodeIdxToPartitionIdx[21] = TfP3;
+  NodeIdxToPartitionIdx[22] = TfP3;
+  NodeIdxToPartitionIdx[23] = TfP3;
+  NodeIdxToPartitionIdx[29] = TfP3;
+  NodeIdxToPartitionIdx[24] = TfP4;
+  NodeIdxToPartitionIdx[25] = TfP4;
+  NodeIdxToPartitionIdx[26] = TfP4;
+  NodeIdxToPartitionIdx[27] = TfP4;
+  NodeIdxToPartitionIdx[28] = TfP4;
+  NodeIdxToPartitionIdx[36] = TfP5;
+  NodeIdxToPartitionIdx[37] = TfP5;
+  NodeIdxToPartitionIdx[38] = TfP5;
+  NodeIdxToPartitionIdx[39] = TfP5;
+  NodeIdxToPartitionIdx[40] = TfP5;
+  NodeIdxToPartitionIdx[54] = TfP5;
+  NodeIdxToPartitionIdx[41] = TfP6;
+  NodeIdxToPartitionIdx[42] = TfP6;
+  NodeIdxToPartitionIdx[43] = TfP6;
+  NodeIdxToPartitionIdx[44] = TfP6;
+  NodeIdxToPartitionIdx[45] = TfP6;
+  NodeIdxToPartitionIdx[46] = TfP6;
+  NodeIdxToPartitionIdx[47] = TfP6;
+  NodeIdxToPartitionIdx[48] = TfP6;
+  NodeIdxToPartitionIdx[49] = TfP6;
+  NodeIdxToPartitionIdx[50] = TfP6;
+  NodeIdxToPartitionIdx[51] = TfP6;
+  NodeIdxToPartitionIdx[52] = TfP6;
+  NodeIdxToPartitionIdx[53] = TfP6;
+  NodeIdxToPartitionIdx[69] = TfP7;
+  NodeIdxToPartitionIdx[70] = TfP7;
+  NodeIdxToPartitionIdx[71] = TfP7;
+  NodeIdxToPartitionIdx[72] = TfP7;
+  NodeIdxToPartitionIdx[73] = TfP7;
+  NodeIdxToPartitionIdx[79] = TfP7;
+  NodeIdxToPartitionIdx[74] = TfP8;
+  NodeIdxToPartitionIdx[75] = TfP8;
+  NodeIdxToPartitionIdx[76] = TfP8;
+  NodeIdxToPartitionIdx[77] = TfP8;
+  NodeIdxToPartitionIdx[78] = TfP8;
+
+
+
+  divide_point.push_back(88);
+  divide_point.push_back(90);
+  divide_point.push_back(92);
+  divide_point.push_back(94);
+  cpu_branchs.push_back({13,14,15,16,17});
+  cpu_branchs.push_back({30,31,32,33,34});
+  cpu_branchs.push_back({55,56,57,58,59,60,61,62,63,64,65,66,67});
+  cpu_branchs.push_back({80,81,82,83,84});
 
 }
 TfLiteStatus BenchmarkTfLiteModel::Init() {

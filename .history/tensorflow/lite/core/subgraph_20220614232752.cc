@@ -661,12 +661,7 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
       case NodeSubset::TfP7:
       case NodeSubset::TfP8: 
       case NodeSubset::TfP9: 
-      case NodeSubset::TfP10:
-      case NodeSubset::TfP11: 
-      case NodeSubset::TfP12: 
-      case NodeSubset::TfP13: 
-      case NodeSubset::TfP14: 
-      case NodeSubset::TfP15: {
+      case NodeSubset::TfP10: {
         int node_index;
 
         TfLiteDelegateParams* params =

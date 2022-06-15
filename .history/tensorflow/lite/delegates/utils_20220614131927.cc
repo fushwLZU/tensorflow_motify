@@ -35,9 +35,9 @@ extern std::vector<int> divide_point;
 extern std::vector<std::vector<int>> cpu_branchs;
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 extern std::vector<int> gpu_supported_nodes;
-extern std::vector<std::vector<int>> gpu_branchs;
+std::vector<std::vector<int>> gpu_partition_nodes;
 int total_nodes_nums;
-// int gpu_partition_num;
+int gpu_partition_num;
 
 namespace tflite {
 namespace delegates {
@@ -210,13 +210,6 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
   // }
   // divide_point[0] = total_nodes_nums;
-  for(int i = 0; i < divide_point.size(); ++i){
-    divide_point[i] += total_nodes_nums;
-  }
-  for(int i = 0; i < gpu_branchs.size(); ++i){
-    gpu_branchs[i][0] += total_nodes_nums;
-  }
-  // TFLITE_LOG(INFO) << "cpu branchs:";
   for(int i = 0; i < cpu_branchs.size(); ++i){
     // for(auto x:cpu_branchs[i]){
     //   TFLITE_LOG(INFO) << x;  
@@ -225,8 +218,8 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
     int mp = divide_point[i];
     divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
   }
-  // gpu_partition_num = divide_point_and_cpu_nodes.size();
-
+  gpu_partition_num = divide_point_and_cpu_nodes.size();
+  gpu_partition_nodes = {{89},{91},{93},{95}};
   // TFLITE_LOG(INFO) << "gpu_partition_num = " << gpu_partition_num;
   // TFLITE_LOG(INFO) << "gpu supported nodes:";
   // for(auto x : gpu_supported_nodes){
@@ -245,9 +238,8 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   gpu_partition_nodes.push_back({total_nodes_nums + 1});
   //   total_nodes_nums++;
   // }
-  // TFLITE_LOG(INFO) << "gpu support nodes:";
+  
   for(int i = 0; i < gpu_supported_nodes.size(); ++i){
-    // TFLITE_LOG(INFO) << gpu_supported_nodes[i];
     supported_nodes_->data[supported_nodes_->size++] = gpu_supported_nodes[i];
   }
 

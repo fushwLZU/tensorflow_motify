@@ -216,7 +216,6 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   for(int i = 0; i < gpu_branchs.size(); ++i){
     gpu_branchs[i][0] += total_nodes_nums;
   }
-  // TFLITE_LOG(INFO) << "cpu branchs:";
   for(int i = 0; i < cpu_branchs.size(); ++i){
     // for(auto x:cpu_branchs[i]){
     //   TFLITE_LOG(INFO) << x;  
@@ -245,9 +244,8 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   gpu_partition_nodes.push_back({total_nodes_nums + 1});
   //   total_nodes_nums++;
   // }
-  // TFLITE_LOG(INFO) << "gpu support nodes:";
+  
   for(int i = 0; i < gpu_supported_nodes.size(); ++i){
-    // TFLITE_LOG(INFO) << gpu_supported_nodes[i];
     supported_nodes_->data[supported_nodes_->size++] = gpu_supported_nodes[i];
   }
 

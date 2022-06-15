@@ -16,35 +16,13 @@ limitations under the License.
 
 #include <algorithm>
 #include <vector>
-#include <map>
-#include <unordered_map>
+
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/context_util.h"
 
 #include "tensorflow/lite/tools/logging.h"
 
-// extern int root_idx;
-enum Type {
-  kTfUnexplored = 0,  // temporarily used during creation
-  kTfPartition,
-  kTfNonPartition,
-  TfP2,
-  TfP3,
-  TfP4,
-  TfP5,
-  TfP6,
-  TfP7,
-  TfP8,
-  TfP9,
-  TfP10,
-  TfP11,
-  TfP12,
-  TfP13,
-  TfP14,
-  TfP15
-};
-extern std::map<int,std::vector<int>> GpuNodeSubsetsIdx;
-extern std::unordered_map<int,Type> NodeIdxToPartitionIdx;
+extern int root_idx;
 
 namespace tflite {
 namespace {
@@ -69,11 +47,8 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
         node_subsets_(node_subsets),
         node_type_(info_->num_total_nodes(), NodeSubset::kTfNonPartition) {
     // Populate the node_type_ map.
-    // TFLITE_LOG(INFO) << "node_type info: ";
     for (auto node_index : TfLiteIntArrayView(nodes_to_partition)) {
-      // node_type_[node_index] = NodeSubset::kTfPartition;
-      node_type_[node_index] = (NodeSubset::Type)NodeIdxToPartitionIdx[node_index];
-      // TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
+      node_type_[node_index] = NodeSubset::kTfPartition;
     }
   }
 
@@ -239,10 +214,10 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
            node_index++) {
         if (UpdateNode(node_index)) {
           did_something = true;
-          // if(node_index == root_idx){
-          //   did_something = false;
-          //   break;
-          // }
+          if(node_index == root_idx){
+            did_something = false;
+            break;
+          }
         }
       }
       if (!did_something) return;
@@ -276,19 +251,10 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
 TfLiteStatus PartitionGraphIntoIndependentNodeSubsets(
     const GraphInfo* info, const TfLiteIntArray* nodes_to_partition,
     std::vector<NodeSubset>* node_subsets) {
-  // //map<int,vector<int>> GpuNodeSubsetsIdx;
-  // TfLiteIntArray* nodes_to_partition_;
-  // for(auto& x : GpuNodeSubsetsIdx){
-  //   nodes_to_partition_ = TfLiteIntArrayCreate(x.second.size());
-  //   nodes_to_partition_->size = 0;
-  //   for(int i = 0; i < x.second.size(); ++i){
-  //     nodes_to_partition_->data[nodes_to_partition_->size++] = x.second[i];
-  //   }
-
-  // }
   PartitionGraphIntoIndependentNodeSubsetsImpl(info, nodes_to_partition,
-                                              node_subsets)
-      .Partition();  
+                                               node_subsets)
+      .Partition();
+  
   //author:fu
   TFLITE_LOG(INFO) << "node_subsets info: " << std::endl;
   for(int i = 0; i < node_subsets->size(); ++i){

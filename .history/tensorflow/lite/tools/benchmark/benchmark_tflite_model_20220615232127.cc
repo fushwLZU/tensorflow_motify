@@ -688,11 +688,9 @@ void BenchmarkTfLiteModel::partitionModel(){
   std::regex reg_mp_gpu("s\\w_mp_mb(\\d+)_gpu");
   std::regex reg_gpu("s\\d+_mb(\\d+)_gpu");
   std::regex reg_cpu("s\\d+_mb(\\d+)_cpu");
-  std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
   std::smatch result;
   int partitionIdx;
   std::vector<int> cpu_branch;
-  TFLITE_LOG(INFO) <<"interpreter_->execution_plan().size() = "<< interpreter_->execution_plan().size();
   for (int i = 0; i < interpreter_->execution_plan().size(); ++i) {
     int node_id = interpreter_->execution_plan()[i];
     const TfLiteNode& node =
@@ -715,13 +713,6 @@ void BenchmarkTfLiteModel::partitionModel(){
       }
       gpu_supported_nodes.push_back(node_id);
       NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
-    }
-    else if(std::regex_search(node_name, result ,reg_gpu_cpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
-      gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
-      cpu_branch.push_back(partitionIdx-1+interpreter_->execution_plan().size());
-      // TFLITE_LOG(INFO) <<"cpu_branch.back() = "<< cpu_branch.back();
     }
     else if(std::regex_search(node_name, result ,reg_gpu)){
       partitionIdx = stoi(result[1].str());  //min = 1

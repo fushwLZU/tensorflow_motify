@@ -69,11 +69,11 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
         node_subsets_(node_subsets),
         node_type_(info_->num_total_nodes(), NodeSubset::kTfNonPartition) {
     // Populate the node_type_ map.
-    // TFLITE_LOG(INFO) << "node_type info: ";
+    TFLITE_LOG(INFO) << "node_type info: ";
     for (auto node_index : TfLiteIntArrayView(nodes_to_partition)) {
       // node_type_[node_index] = NodeSubset::kTfPartition;
       node_type_[node_index] = (NodeSubset::Type)NodeIdxToPartitionIdx[node_index];
-      // TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
+      TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
     }
   }
 
@@ -173,18 +173,18 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
     }
     // See if all dependencies of this node are already assigned to a
     // node sub set.
-    for (int input_tensor_index : TfLiteIntArrayView(node.inputs)) {
-      if (input_tensor_index != kTfLiteOptionalTensor &&
-          tensor_epochs_[input_tensor_index] == kEpochNotReady) {
-        return false;
-      }
-    }
+    // for (int input_tensor_index : TfLiteIntArrayView(node.inputs)) {
+    //   if (input_tensor_index != kTfLiteOptionalTensor &&
+    //       tensor_epochs_[input_tensor_index] == kEpochNotReady) {
+    //     return false;
+    //   }
+    // }
     // If any of the nodes that current node depend on is not assigned
     // any epochs then don't process this node.
-    if (control_deps_[node_index] != -1 &&
-        node_epochs_[control_deps_[node_index]] == kEpochNotReady) {
-      return false;
-    }
+    // if (control_deps_[node_index] != -1 &&
+    //     node_epochs_[control_deps_[node_index]] == kEpochNotReady) {
+    //   return false;
+    // }
 
     int original_node_idx = info_->node_index(node_index);
     // When we are starting a new epoch, the first ready node defines

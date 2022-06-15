@@ -24,27 +24,8 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 
 // extern int root_idx;
-enum Type {
-  kTfUnexplored = 0,  // temporarily used during creation
-  kTfPartition,
-  kTfNonPartition,
-  TfP2,
-  TfP3,
-  TfP4,
-  TfP5,
-  TfP6,
-  TfP7,
-  TfP8,
-  TfP9,
-  TfP10,
-  TfP11,
-  TfP12,
-  TfP13,
-  TfP14,
-  TfP15
-};
 extern std::map<int,std::vector<int>> GpuNodeSubsetsIdx;
-extern std::unordered_map<int,Type> NodeIdxToPartitionIdx;
+extern std::unordered_map<int,NodeSubet::Type> NodeIdxToPartitionIdx;
 
 namespace tflite {
 namespace {
@@ -69,11 +50,9 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
         node_subsets_(node_subsets),
         node_type_(info_->num_total_nodes(), NodeSubset::kTfNonPartition) {
     // Populate the node_type_ map.
-    // TFLITE_LOG(INFO) << "node_type info: ";
     for (auto node_index : TfLiteIntArrayView(nodes_to_partition)) {
       // node_type_[node_index] = NodeSubset::kTfPartition;
-      node_type_[node_index] = (NodeSubset::Type)NodeIdxToPartitionIdx[node_index];
-      // TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
+      node_type_[node_index] = 
     }
   }
 

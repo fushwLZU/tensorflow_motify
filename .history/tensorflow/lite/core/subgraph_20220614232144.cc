@@ -67,8 +67,8 @@ limitations under the License.
 //author:fu
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 extern std::vector<std::vector<int>> gpu_branchs;
-// extern int total_nodes_nums;
-// extern int gpu_partition_num;
+extern int total_nodes_nums;
+extern int gpu_partition_num;
 extern void SyncGpu();
 extern void tensorPtrMotify();
 extern uint64_t GetMapOutEventTime();
@@ -661,12 +661,7 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
       case NodeSubset::TfP7:
       case NodeSubset::TfP8: 
       case NodeSubset::TfP9: 
-      case NodeSubset::TfP10:
-      case NodeSubset::TfP11: 
-      case NodeSubset::TfP12: 
-      case NodeSubset::TfP13: 
-      case NodeSubset::TfP14: 
-      case NodeSubset::TfP15: {
+      case NodeSubset::TfP10: {
         int node_index;
 
         TfLiteDelegateParams* params =

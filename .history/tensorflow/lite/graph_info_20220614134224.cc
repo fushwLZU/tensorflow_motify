@@ -36,12 +36,7 @@ enum Type {
   TfP7,
   TfP8,
   TfP9,
-  TfP10,
-  TfP11,
-  TfP12,
-  TfP13,
-  TfP14,
-  TfP15
+  TfP10
 };
 extern std::map<int,std::vector<int>> GpuNodeSubsetsIdx;
 extern std::unordered_map<int,Type> NodeIdxToPartitionIdx;
@@ -69,11 +64,9 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
         node_subsets_(node_subsets),
         node_type_(info_->num_total_nodes(), NodeSubset::kTfNonPartition) {
     // Populate the node_type_ map.
-    // TFLITE_LOG(INFO) << "node_type info: ";
     for (auto node_index : TfLiteIntArrayView(nodes_to_partition)) {
       // node_type_[node_index] = NodeSubset::kTfPartition;
       node_type_[node_index] = (NodeSubset::Type)NodeIdxToPartitionIdx[node_index];
-      // TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
     }
   }
 

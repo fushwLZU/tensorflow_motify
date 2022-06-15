@@ -716,13 +716,6 @@ void BenchmarkTfLiteModel::partitionModel(){
       gpu_supported_nodes.push_back(node_id);
       NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
     }
-    else if(std::regex_search(node_name, result ,reg_gpu_cpu)){
-      partitionIdx = stoi(result[1].str());  //min = 1
-      gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
-      cpu_branch.push_back(partitionIdx-1+interpreter_->execution_plan().size());
-      // TFLITE_LOG(INFO) <<"cpu_branch.back() = "<< cpu_branch.back();
-    }
     else if(std::regex_search(node_name, result ,reg_gpu)){
       partitionIdx = stoi(result[1].str());  //min = 1
       if(gpu_branchs_set.find(partitionIdx-1) == gpu_branchs_set.end()){
@@ -742,6 +735,13 @@ void BenchmarkTfLiteModel::partitionModel(){
         }
       }
       cpu_branch.push_back(node_id);
+    }
+    else if(std::regex_search(node_name, result ,reg_gpu_cpu)){
+      partitionIdx = stoi(result[1].str());  //min = 1
+      gpu_supported_nodes.push_back(node_id);
+      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[partitionIdx];
+      cpu_branch.push_back(partitionIdx-1+interpreter_->execution_plan().size());
+      // TFLITE_LOG(INFO) <<"cpu_branch.back() = "<< cpu_branch.back();
     }
   }
   cpu_branchs.push_back(cpu_branch);

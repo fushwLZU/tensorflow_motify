@@ -600,7 +600,7 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
     TfLiteRegistration registration, const TfLiteIntArray* nodes_to_replace,
     TfLiteDelegate* delegate) {
 
-  // TFLITE_LOG(INFO) << "fsw In ReplaceNodeSubsetsWithDelegateKernels():" << std::endl;
+  TFLITE_LOG(INFO) << "fsw In ReplaceNodeSubsetsWithDelegateKernels():" << std::endl;
   // TFLITE_LOG(INFO) << "nodes_to_replace=" << nodes_to_replace->size << std::endl;
   
   // Ignore empty node replacement sets.
@@ -661,12 +661,7 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
       case NodeSubset::TfP7:
       case NodeSubset::TfP8: 
       case NodeSubset::TfP9: 
-      case NodeSubset::TfP10:
-      case NodeSubset::TfP11: 
-      case NodeSubset::TfP12: 
-      case NodeSubset::TfP13: 
-      case NodeSubset::TfP14: 
-      case NodeSubset::TfP15: {
+      case NodeSubset::TfP10: {
         int node_index;
 
         TfLiteDelegateParams* params =
@@ -778,7 +773,7 @@ TfLiteStatus Subgraph::GetModelMetadata(const struct TfLiteContext* context,
 TfLiteStatus Subgraph::PreviewDelegatePartitioning(
     const TfLiteIntArray* nodes_to_replace,
     TfLiteDelegateParams** partition_params_array, int* num_partitions) {
-  // TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning()..." << std::endl;
+  TFLITE_LOG(INFO) << "fsw In PreviewDelegatePartitioning()..." << std::endl;
   
   // Ensure partitioning cache is empty.
   FreeDelegatePartitioningData();

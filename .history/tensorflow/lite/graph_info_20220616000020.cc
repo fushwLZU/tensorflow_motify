@@ -69,11 +69,11 @@ class PartitionGraphIntoIndependentNodeSubsetsImpl {
         node_subsets_(node_subsets),
         node_type_(info_->num_total_nodes(), NodeSubset::kTfNonPartition) {
     // Populate the node_type_ map.
-    // TFLITE_LOG(INFO) << "node_type info: ";
+    TFLITE_LOG(INFO) << "node_type info: ";
     for (auto node_index : TfLiteIntArrayView(nodes_to_partition)) {
       // node_type_[node_index] = NodeSubset::kTfPartition;
       node_type_[node_index] = (NodeSubset::Type)NodeIdxToPartitionIdx[node_index];
-      // TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
+      TFLITE_LOG(INFO) << node_index << "  " << node_type_[node_index];
     }
   }
 

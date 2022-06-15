@@ -77,12 +77,7 @@ struct NodeSubset {
     TfP7,
     TfP8,
     TfP9,
-    TfP10,
-    TfP11,
-    TfP12,
-    TfP13,
-    TfP14,
-    TfP15
+    TfP10
   };
   Type type = kTfUnexplored;
   // Nodes within the node sub set
