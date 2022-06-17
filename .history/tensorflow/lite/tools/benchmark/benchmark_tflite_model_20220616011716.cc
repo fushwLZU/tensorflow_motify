@@ -28,7 +28,6 @@ limitations under the License.
 #include <map>
 #include <regex>
 #include <set>
-#include <algorithm>
 
 #include "absl/base/attributes.h"
 #include "absl/strings/numbers.h"
@@ -692,7 +691,6 @@ void BenchmarkTfLiteModel::partitionModel(){
   std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
   std::smatch result;
   int partitionIdx;
-  int maxPartitionIdx = 0;
   std::vector<int> cpu_branch;
   // TFLITE_LOG(INFO) <<"interpreter_->execution_plan().size() = "<< interpreter_->execution_plan().size();
   for (int i = 0; i < interpreter_->execution_plan().size(); ++i) {
@@ -711,7 +709,6 @@ void BenchmarkTfLiteModel::partitionModel(){
     
     if(std::regex_search(node_name, result ,reg_mp_gpu)){
       partitionIdx = stoi(result[1].str());  //min = 1
-      maxPartitionIdx = std::max(maxPartitionIdx, partitionIdx);
       if(divide_point_set.find(partitionIdx-1) == divide_point_set.end()){
         divide_point.push_back(partitionIdx-1); 
         divide_point_set.insert(partitionIdx-1);
@@ -746,10 +743,6 @@ void BenchmarkTfLiteModel::partitionModel(){
         }
       }
       cpu_branch.push_back(node_id);
-    }
-    else if(node_name.find("StatefulPartitionedCall") != std::string::npos){
-      gpu_supported_nodes.push_back(node_id);
-      NodeIdxToPartitionIdx[node_id] = PartitionIdxToType[maxPartitionIdx];
     }
   }
   cpu_branchs.push_back(cpu_branch);

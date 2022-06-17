@@ -711,7 +711,7 @@ void BenchmarkTfLiteModel::partitionModel(){
     
     if(std::regex_search(node_name, result ,reg_mp_gpu)){
       partitionIdx = stoi(result[1].str());  //min = 1
-      maxPartitionIdx = std::max(maxPartitionIdx, partitionIdx);
+      maxPartitionIdx = std::max(maxPartitionIdx,partitionIdx);
       if(divide_point_set.find(partitionIdx-1) == divide_point_set.end()){
         divide_point.push_back(partitionIdx-1); 
         divide_point_set.insert(partitionIdx-1);
