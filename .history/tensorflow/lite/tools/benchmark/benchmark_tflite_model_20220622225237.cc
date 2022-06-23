@@ -733,7 +733,7 @@ void BenchmarkTfLiteModel::partitionModel(){
         if(!cpu_branch.empty()){
           cpu_branchs.push_back(cpu_branch);
           cpu_branch.clear();
-          cpu_branch.push_back(partitionIdx-1+interpreter_->execution_plan().size());
+          cpu_branch.push_back(node_id);
         }
       }
       // TFLITE_LOG(INFO) <<"cpu_branch.back() = "<< cpu_branch.back();

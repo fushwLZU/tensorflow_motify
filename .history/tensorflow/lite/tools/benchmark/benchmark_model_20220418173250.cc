@@ -62,7 +62,7 @@ void BenchmarkLoggingListener::OnBenchmarkEnd(const BenchmarkResults& results) {
   auto warmup_us = results.warmup_time_us();
   auto init_mem_usage = results.init_mem_usage();
   auto overall_mem_usage = results.overall_mem_usage();
-  TFLITE_LOG(INFO) << "Inference timings in us: "
+  TFLITE_LOG(INFO) << "fsw Inference timings in us: "
                    << "Init: " << init_us << ", "
                    << "First inference: " << warmup_us.first() << ", "
                    << "Warmup (avg): " << warmup_us.avg() << ", "
