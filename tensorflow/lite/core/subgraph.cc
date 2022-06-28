@@ -67,7 +67,7 @@ limitations under the License.
 //author:fu
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
 extern std::vector<std::vector<int>> gpu_branchs;
-// extern int total_nodes_nums;
+extern int total_nodes_nums;
 // extern int gpu_partition_num;
 extern void SyncGpu();
 extern void tensorPtrMotify();
@@ -1635,10 +1635,10 @@ TfLiteStatus Subgraph::Invoke() {
     MaybeReleaseDynamicInputs(node, node_index);
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
-      if(is_first_parallel){
+      if(node_index >= total_nodes_nums){
         SyncGpu();
         tensorPtrMotify();
-        is_first_parallel = false;
+        // is_first_parallel = false;
       }
 
       // auto end = std::chrono::high_resolution_clock::now();

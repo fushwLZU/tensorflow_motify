@@ -686,16 +686,16 @@ std::string ToString(const std::vector<std::string>& str_vector) {
 }
 
 void BenchmarkTfLiteModel::partitionModel(){
-  std::regex reg_mp_gpu("s\\w_mp_mb(\\d+)_gpu");
-  std::regex reg_gpu("s\\d+_mb(\\d+)_gpu");
-  // std::regex reg_mp_cpu("mp_cpu");
-  std::regex reg_cpu("s\\d+_mb(\\d+)_cpu");
-  std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
-  // std::regex reg_mp_gpu("gpu_mp_mb(\\d+)");
-  // std::regex reg_gpu("gpu_mb(\\d+)");
+  // std::regex reg_mp_gpu("s\\w_mp_mb(\\d+)_gpu");
+  // std::regex reg_gpu("s\\d+_mb(\\d+)_gpu");
   // // std::regex reg_mp_cpu("mp_cpu");
-  // std::regex reg_cpu("cpu_mb(\\d+)");
+  // std::regex reg_cpu("s\\d+_mb(\\d+)_cpu");
   // std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
+  std::regex reg_mp_gpu("gpu_mp_mb(\\d+)");
+  std::regex reg_gpu("gpu_mb(\\d+)");
+  // std::regex reg_mp_cpu("mp_cpu");
+  std::regex reg_cpu("cpu_mb(\\d+)");
+  std::regex reg_gpu_cpu("s\\d+_mb(\\d+)_gpu_cpu");
   std::smatch result;
   int partitionIdx;
   int maxPartitionIdx = 0;

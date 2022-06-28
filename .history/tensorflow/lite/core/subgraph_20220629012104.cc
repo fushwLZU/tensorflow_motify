@@ -66,12 +66,13 @@ limitations under the License.
 
 //author:fu
 extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
-extern std::vector<std::vector<int>> gpu_partition_nodes;
+extern std::vector<std::vector<int>> gpu_branchs;
 extern int total_nodes_nums;
-extern int gpu_partition_num;
+// extern int gpu_partition_num;
 extern void SyncGpu();
 extern void tensorPtrMotify();
 extern uint64_t GetMapOutEventTime();
+bool is_first_parallel = true;
 
 // template <typename T>
 // class threadpool
@@ -651,7 +652,21 @@ TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
           execution_plan_.push_back(*it);
         }
         break;
-      case NodeSubset::kTfPartition: {
+      case NodeSubset::kTfPartition:
+      case NodeSubset::TfP2: 
+      case NodeSubset::TfP3:
+      case NodeSubset::TfP4:
+      case NodeSubset::TfP5:
+      case NodeSubset::TfP6:
+      case NodeSubset::TfP7:
+      case NodeSubset::TfP8: 
+      case NodeSubset::TfP9: 
+      case NodeSubset::TfP10:
+      case NodeSubset::TfP11: 
+      case NodeSubset::TfP12: 
+      case NodeSubset::TfP13: 
+      case NodeSubset::TfP14: 
+      case NodeSubset::TfP15: {
         int node_index;
 
         TfLiteDelegateParams* params =
@@ -771,9 +786,9 @@ TfLiteStatus Subgraph::PreviewDelegatePartitioning(
   if (!partition_params_array || !num_partitions) return kTfLiteError;
   *partition_params_array = nullptr;
   *num_partitions = 0;
-  if (!nodes_to_replace->size) {
-    return kTfLiteOk;
-  }
+  // if (!nodes_to_replace->size) {
+  //   return kTfLiteOk;
+  // }
 
   // Partition the execution plan into node subsets.
   InterpreterInfo info(this);
@@ -783,7 +798,10 @@ TfLiteStatus Subgraph::PreviewDelegatePartitioning(
 
   // Create one TfLiteDelegateParams per node-subset which would be delegated.
   for (auto& node_subset : node_subsets) {
-    if (node_subset.type != NodeSubset::kTfPartition) {
+    // if (node_subset.type != NodeSubset::kTfPartition) {
+    //   continue;
+    // }
+    if (node_subset.type == NodeSubset::kTfNonPartition) {
       continue;
     }
     partitioning_preview_cache_.emplace_back();
@@ -1391,7 +1409,6 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
-    // TFLITE_LOG(INFO) << "fsw in parallel_execute";
     const char* op_name = nullptr;
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
@@ -1477,7 +1494,7 @@ TfLiteStatus Subgraph::parallel_execute(std::vector<int>& nodes){
     // // Release dynamic tensor memory if configured by the user.
     // MaybeReleaseDynamicInputs(node, node_index);
   }
-  finish.Signal();
+  // finish.Signal();
   return kTfLiteOk;
 
 }
@@ -1524,7 +1541,7 @@ TfLiteStatus Subgraph::Invoke() {
                                     execution_plan_index);
     }
     int node_index = execution_plan_[execution_plan_index];
-    // TFLITE_LOG(INFO) << "current node_index: " << node_index;
+    TFLITE_LOG(INFO) << "current node_index: " << node_index;
     TfLiteNode& node = nodes_and_registration_[node_index].first;
     const TfLiteRegistration& registration =
         nodes_and_registration_[node_index].second;
@@ -1533,6 +1550,7 @@ TfLiteStatus Subgraph::Invoke() {
     if (profiler_) op_name = GetTFLiteOpName(registration);
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
     
+    // TFLITE_LOG(INFO) << "current node_name: " << registration.custom_name;
     // auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < node.inputs->size; ++i) {
       int tensor_index = node.inputs->data[i];
@@ -1617,22 +1635,19 @@ TfLiteStatus Subgraph::Invoke() {
     MaybeReleaseDynamicInputs(node, node_index);
 
     if(divide_point_and_cpu_nodes.find(node_index) != divide_point_and_cpu_nodes.end()){
+      if(node_index >= total_nodes_nums){
+        SyncGpu();
+        tensorPtrMotify();
+        // is_first_parallel = false;
+      }
 
       // auto end = std::chrono::high_resolution_clock::now();
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  
       // TFLITE_LOG(INFO) << "meeting point " << node_index << " latency: " << duration_mcs.count();
 
-      // std::vector<int> gpu_node = gpu_partition_nodes[current_gpu_partition++];
-      // std::thread branch1(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index]);
-                                      
-      // finish = Semaphore(-1);
-      // pool.pushTask((bind(&Subgraph::parallel_execute, this, gpu_partition_nodes[current_gpu_partition])),gpu_partition_nodes[current_gpu_partition]);
-      // current_gpu_partition++;
-      // pool.pushTask((bind(&Subgraph::parallel_execute, this, divide_point_and_cpu_nodes[node_index])),divide_point_and_cpu_nodes[node_index]);
-      // finish.Wait();
 
       // auto start = std::chrono::high_resolution_clock::now();
-      parallel_execute(gpu_partition_nodes[current_gpu_partition]);
+      parallel_execute(gpu_branchs[current_gpu_partition]);
       current_gpu_partition++;
       // auto end = std::chrono::high_resolution_clock::now();
       // std::chrono::duration<double,std::ratio<1,1000000>> duration_mcs=std::chrono::duration_cast<std::chrono::duration<double,std::ratio<1,1000000>>> (end-start);  

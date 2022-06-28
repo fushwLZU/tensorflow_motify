@@ -216,12 +216,12 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   for(int i = 0; i < gpu_branchs.size(); ++i){
     gpu_branchs[i][0] += total_nodes_nums;
   }
-  // TFLITE_LOG(INFO) << "cpu branchs:";
+  TFLITE_LOG(INFO) << "cpu branchs:";
   for(int i = 0; i < cpu_branchs.size(); ++i){
-    // for(auto x:cpu_branchs[i]){
-    //   TFLITE_LOG(INFO) << x;  
-    // }
-    // TFLITE_LOG(INFO) << std::endl;
+    for(auto x:cpu_branchs[i]){
+      TFLITE_LOG(INFO) << x;  
+    }
+    TFLITE_LOG(INFO) << std::endl;
     int mp = divide_point[i];
     divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
   }

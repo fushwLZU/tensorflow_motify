@@ -31,10 +31,13 @@ limitations under the License.
 
 //author:fu
 extern std::string partition_file_name;
-std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
-std::vector<std::vector<int>> gpu_partition_nodes;
+extern std::vector<int> divide_point;
+extern std::vector<std::vector<int>> cpu_branchs;
+extern std::unordered_map<int, std::vector<int>> divide_point_and_cpu_nodes;
+extern std::vector<int> gpu_supported_nodes;
+extern std::vector<std::vector<int>> gpu_branchs;
 int total_nodes_nums;
-int gpu_partition_num;
+// int gpu_partition_num;
 
 namespace tflite {
 namespace delegates {
@@ -164,6 +167,7 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //     supported_nodes_->size = 0;
   //     return status;
   //   }
+  //   TFLITE_LOG(INFO) << "node_id: " << node_id << "  node_name: " ;
 
   //   std::string unsupported_details;
   //   if (IsNodeSupported(context_, node, registration, node_id,
@@ -183,35 +187,68 @@ TfLiteStatus GraphPartitionHelper::PrepareSupportedNodes(
   //   TFLITE_LOG(INFO) << node_id << " "; 
   // }
   // TFLITE_LOG(INFO) << std::endl << std::endl;
-  std::vector<int> node_ids;
-  std::ifstream infile;
-  infile.open(partition_file_name);
-  std::string tmp;
-  getline(infile, tmp);
-  std::stringstream ss(tmp);
-  std::string token;
-  while (ss >> token){
-    node_ids.push_back(std::stod(token));
+  // std::vector<int> node_ids;
+  // std::ifstream infile;
+  // infile.open(partition_file_name);
+  // std::string tmp;
+  // getline(infile, tmp);
+  // std::stringstream ss(tmp);
+  // std::string token;
+  // while (ss >> token){
+  //   node_ids.push_back(std::stod(token));
+  // }
+  // while(getline(infile,tmp)){
+  //   gpu_partition_num++;
+  //   std::stringstream ss(tmp);
+  //   std::string divide_point;
+  //   std::string node_idx;
+  //   std::vector<int> cpu_nodes;
+  //   ss >> divide_point;
+  //   while(ss >> node_idx){
+  //     cpu_nodes.push_back(std::stod(node_idx));
+  //   }
+  //   divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
+  // }
+  // divide_point[0] = total_nodes_nums;
+  // for(int i = 0; i < divide_point.size(); ++i){
+  //   divide_point[i] += total_nodes_nums;
+  // }
+  for(int i = 0; i < gpu_branchs.size(); ++i){
+    gpu_branchs[i][0] += total_nodes_nums;
   }
-  while(getline(infile,tmp)){
-    gpu_partition_num++;
-    std::stringstream ss(tmp);
-    std::string divide_point;
-    std::string node_idx;
-    std::vector<int> cpu_nodes;
-    ss >> divide_point;
-    while(ss >> node_idx){
-      cpu_nodes.push_back(std::stod(node_idx));
-    }
-    divide_point_and_cpu_nodes[stod(divide_point)] = cpu_nodes;
+  // TFLITE_LOG(INFO) << "cpu branchs:";
+  for(int i = 0; i < cpu_branchs.size(); ++i){
+    // for(auto x:cpu_branchs[i]){
+    //   TFLITE_LOG(INFO) << x;  
+    // }
+    // TFLITE_LOG(INFO) << std::endl;
+    int mp = divide_point[i];
+    divide_point_and_cpu_nodes[mp] = cpu_branchs[i];
   }
+  // gpu_partition_num = divide_point_and_cpu_nodes.size();
 
-  for(int i=0;i<gpu_partition_num;++i){
-    gpu_partition_nodes.push_back({total_nodes_nums});
-    total_nodes_nums++;
+  // TFLITE_LOG(INFO) << "gpu_partition_num = " << gpu_partition_num;
+  // TFLITE_LOG(INFO) << "gpu supported nodes:";
+  // for(auto x : gpu_supported_nodes){
+  //   TFLITE_LOG(INFO) << x;
+  // }
+  TFLITE_LOG(INFO) << "cpu branchs:";
+  for(auto& mp : divide_point_and_cpu_nodes){
+    TFLITE_LOG(INFO) << "meeting point: " << mp.first;
+    TFLITE_LOG(INFO) << "cpu branch:";
+    for(auto x : mp.second){
+      TFLITE_LOG(INFO) << x;
+    }
   }
-  for(int i = 0; i < node_ids.size(); ++i){
-    supported_nodes_->data[supported_nodes_->size++] = node_ids[i];
+  //new index for gpu nodes
+  // for(int i = 0; i < gpu_partition_num; ++i){
+  //   gpu_partition_nodes.push_back({total_nodes_nums + 1});
+  //   total_nodes_nums++;
+  // }
+  // TFLITE_LOG(INFO) << "gpu support nodes:";
+  for(int i = 0; i < gpu_supported_nodes.size(); ++i){
+    // TFLITE_LOG(INFO) << gpu_supported_nodes[i];
+    supported_nodes_->data[supported_nodes_->size++] = gpu_supported_nodes[i];
   }
 
   num_supported_nodes_ = supported_nodes_->size;
